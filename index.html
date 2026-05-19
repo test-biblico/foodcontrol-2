@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FoodControl PRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --green: #22c55e;
+  --green-dark: #16a34a;
+  --green-light: #bbf7d0;
+  --orange: #f97316;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --bg: #0f1117;
+  --bg2: #161b26;
+  --bg3: #1e2535;
+  --card: #1e2535;
+  --card2: #252d40;
+  --border: #2d3748;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ====== APP SHELL ====== */
+#app { display: flex; flex-direction: column; height: 100vh; max-width: 430px; margin: 0 auto; position: relative; background: var(--bg); }
+
+/* ====== HEADER ====== */
+.header { 
+  padding: 20px 20px 12px; 
+  background: linear-gradient(135deg, #0f1117 0%, #1a2236 100%);
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.header-top { display: flex; justify-content: space-between; align-items: center; }
+.app-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; }
+.app-title span { color: var(--green); }
+.header-badge { background: var(--green); color: #000; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; letter-spacing: 1px; }
+.greeting { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+/* ====== NAV BOTTOM ====== */
+.nav-bottom {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 4px 16px;
+  z-index: 100;
+}
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 12px; border: none; background: none; cursor: pointer;
+  color: var(--text3); transition: color 0.2s; border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+}
+.nav-btn.active { color: var(--green); }
+.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn span { font-size: 10px; font-weight: 700; }
+
+/* ====== CONTENT ====== */
+.content { flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ====== CARDS ====== */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.card-title { font-size: 14px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card-title .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ====== STATS ROW ====== */
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--card2); border-radius: var(--radius); padding: 14px;
+  border: 1px solid var(--border);
+}
+.stat-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 22px; font-weight: 900; margin-top: 4px; font-family: 'Sora', sans-serif; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ====== INPUTS ====== */
+.input-group { margin-bottom: 10px; }
+.input-label { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; display: block; }
+input, select, textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); padding: 12px 14px; border-radius: 12px;
+  font-family: 'Nunito', sans-serif; font-size: 14px; outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(--green); }
+select option { background: var(--bg); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* ====== BUTTONS ====== */
+.btn {
+  width: 100%; padding: 13px; border: none; border-radius: 12px;
+  font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-green { background: var(--green); color: #000; }
+.btn-green:active { background: var(--green-dark); transform: scale(0.98); }
+.btn-orange { background: var(--orange); color: #fff; }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-purple { background: var(--purple); color: #fff; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-sm { padding: 8px 14px; font-size: 12px; width: auto; border-radius: 8px; }
+.btn-red { background: var(--red); color: #fff; }
+
+/* ====== ITEMS LIST ====== */
+.item-list { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  background: var(--card2); border-radius: 12px; padding: 13px 14px;
+  border: 1px solid var(--border); display: flex; align-items: center; gap: 12px;
+}
+.item-icon { 
+  width: 40px; height: 40px; border-radius: 10px; display: flex; 
+  align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.item-info { flex: 1; }
+.item-name { font-size: 14px; font-weight: 700; }
+.item-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.item-right { text-align: right; }
+.item-value { font-size: 15px; font-weight: 800; font-family: 'Sora', sans-serif; }
+.item-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 6px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+}
+.badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+.badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+.badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+.badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+/* ====== PROGRESS BAR ====== */
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+/* ====== SECTION TITLE ====== */
+.section-title { font-size: 18px; font-weight: 900; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+/* ====== TABS ====== */
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+.tab {
+  padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text2); font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: all 0.2s;
+}
+.tab.active { background: var(--green); color: #000; border-color: var(--green); }
+
+/* ====== PLAN DAY CARD ====== */
+.day-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 12px; overflow: hidden;
+}
+.day-header {
+  padding: 12px 16px; background: var(--card2); display: flex;
+  justify-content: space-between; align-items: center;
+  cursor: pointer;
+}
+.day-title { font-size: 15px; font-weight: 800; }
+.day-total { font-size: 13px; font-weight: 700; color: var(--green); }
+.day-body { padding: 12px 16px; display: none; }
+.day-body.open { display: block; }
+.meal-item { margin-bottom: 12px; }
+.meal-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text3); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.meal-label::before { content: ''; display: block; width: 3px; height: 12px; border-radius: 2px; }
+.meal-desayuno .meal-label::before { background: var(--orange); }
+.meal-almuerzo .meal-label::before { background: var(--green); }
+.meal-merienda .meal-label::before { background: var(--purple); }
+.meal-food { font-size: 14px; font-weight: 600; }
+.meal-ingredients { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.meal-cost { font-size: 12px; font-weight: 700; color: var(--green); margin-top: 4px; }
+
+/* ====== TOAST ====== */
+#toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--green); color: #000; padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 700; z-index: 999; opacity: 0;
+  transition: all 0.3s; pointer-events: none; max-width: 300px; text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.error { background: var(--red); color: #fff; }
+
+/* ====== MODAL ====== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 200; display: none; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border-radius: 24px 24px 0 0; padding: 24px;
+  width: 100%; max-width: 430px; max-height: 85vh; overflow-y: auto;
+  border: 1px solid var(--border); border-bottom: none;
+}
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
+
+/* ====== COMPARAR TABLA ====== */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.compare-table th { padding: 8px; background: var(--card2); color: var(--text2); font-size: 11px; text-transform: uppercase; font-weight: 700; }
+.compare-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+.compare-table .best { color: var(--green); font-weight: 800; }
+
+/* ====== OCR AREA ====== */
+.ocr-area {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 32px; text-align: center; margin-bottom: 14px;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.ocr-area:hover { border-color: var(--green); }
+.ocr-icon { font-size: 48px; margin-bottom: 12px; }
+.ocr-text { font-size: 14px; color: var(--text2); }
+#ocr-file { display: none; }
+
+/* ====== CHART CONTAINER ====== */
+.chart-wrap { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; border: 1px solid var(--border); }
+.chart-title { font-size: 14px; font-weight: 700; color: var(--text2); margin-bottom: 12px; }
+
+/* ====== EMPTY STATE ====== */
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; }
+
+/* ====== SCROLL ====== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ====== ANIMATIONS ====== */
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.screen.active { animation: slideIn 0.3s ease; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.pulsing { animation: pulse 1.5s infinite; }
+
+/* ====== DIVIDER ====== */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ====== CHIP ROW ====== */
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  background: var(--card2); color: var(--text2); transition: all 0.2s;
+}
+.chip.active { background: var(--green); color: #000; border-color: var(--green); }
+
+/* ====== RESULT BOX ====== */
+.result-box {
+  background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(22,163,74,0.05));
+  border: 1px solid rgba(34,197,94,0.3); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 14px;
+}
+.result-title { font-size: 13px; font-weight: 700; color: var(--green); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+.result-row:last-child { border-bottom: none; font-weight: 800; font-size: 15px; color: var(--green); }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="app-title">Food<span>Control</span></div>
+        <div class="greeting" id="greeting-text">Cargando...</div>
+      </div>
+      <div class="header-badge">PRO</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">📦 Productos</div>
+          <div class="stat-value" id="stat-productos" style="color:var(--green)">0</div>
+          <div class="stat-sub">en stock</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">💰 Invertido</div>
+          <div class="stat-value" id="stat-total" style="color:var(--blue)">0</div>
+          <div class="stat-sub">Gs total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🍽️ Días plan</div>
+          <div class="stat-value" id="stat-dias" style="color:var(--purple)">0</div>
+          <div class="stat-sub">planificados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🏪 Ahorro est.</div>
+          <div class="stat-value" id="stat-ahorro" style="color:var(--orange)">0%</div>
+          <div class="stat-sub">vs precio normal</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">📊 Stock disponible por producto</div>
+        <canvas id="chart-stock" height="160"></canvas>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">💸 Costo por comida (plan)</div>
+        <canvas id="chart-costos" height="160"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--red)"></span> Productos por agotar</div>
+        <div id="lista-alertas" class="item-list">
+          <div class="empty"><div class="empty-text">Sin alertas 🎉</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STOCK ===== -->
+    <div class="screen" id="screen-stock">
+      <div class="section-title">📦 Control de Stock</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> Agregar producto</div>
+        <div class="input-group">
+          <label class="input-label">Producto</label>
+          <input id="s-nombre" placeholder="Ej: Arroz, Pollo, Queso...">
+        </div>
+        <div class="grid-3">
+          <div class="input-group">
+            <label class="input-label">Cantidad</label>
+            <input id="s-cant" type="number" step="0.001" placeholder="0">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Unidad</label>
+            <select id="s-unidad">
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="unid">unid</option>
+              <option value="litro">litro</option>
+              <option value="ml">ml</option>
+              <option value="mazo">mazo</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Precio Gs</label>
+            <input id="s-precio" type="number" placeholder="0">
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="agregarStock()">➕ Agregar al Stock</button>
+      </div>
+
+      <div id="lista-stock" class="item-list">
+        <div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Agregá productos a tu stock</div></div>
+      </div>
+    </div>
+
+    <!-- ===== OCR ===== -->
+    <div class="screen" id="screen-ocr">
+      <div class="section-title">📸 Escanear Ticket</div>
+      <div class="section-sub">Sacá foto a tu factura o ticket y cargamos los productos automáticamente.</div>
+
+      <div class="ocr-area" onclick="document.getElementById('ocr-file').click()">
+        <div class="ocr-icon" id="ocr-icon">📷</div>
+        <div class="ocr-text" id="ocr-text">Tocá para seleccionar imagen</div>
+        <input type="file" accept="image/*" id="ocr-file" onchange="procesarOCR(event)">
+      </div>
+
+      <div id="ocr-resultados" style="display:none">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Productos detectados</div>
+          <div id="ocr-items" class="item-list"></div>
+          <div style="margin-top:12px">
+            <label class="input-label">Supermercado (opcional)</label>
+            <input id="ocr-super" placeholder="Ej: Stock, Ñanduti, Shopping...">
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn btn-green" onclick="guardarOCR()">✅ Guardar en Stock</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMPORT ARCHIVO -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> 📂 Importar desde archivo</div>
+        <div class="section-sub" style="margin-bottom:12px">Cargá un Excel (.xlsx), CSV o TXT con tus productos y precios.</div>
+
+        <div class="ocr-area" id="import-area" onclick="document.getElementById('import-file').click()" style="padding:20px">
+          <div class="ocr-icon" id="import-icon">📂</div>
+          <div class="ocr-text" id="import-text">Tocá para seleccionar archivo</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px">.xlsx · .csv · .txt</div>
+          <input type="file" accept=".xlsx,.xls,.csv,.txt" id="import-file" style="display:none" onchange="procesarArchivo(event)">
+        </div>
+
+        <!-- Plantilla de referencia -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">📋 Formato esperado de columnas:</div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-size:11px;border-collapse:collapse;color:var(--text2)">
+              <thead>
+                <tr style="background:var(--card2)">
+                  <th style="padding:5px 8px;text-align:left;border-radius:6px 0 0 6px">Producto</th>
+                  <th style="padding:5px 8px;text-align:left">Cantidad</th>
+                  <th style="padding:5px 8px;text-align:left">Unidad</th>
+                  <th style="padding:5px 8px;text-align:left;border-radius:0 6px 6px 0">Precio (Gs)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding:4px 8px;color:var(--text3)">Arroz</td><td style="padding:4px 8px;color:var(--text3)">2</td><td style="padding:4px 8px;color:var(--text3)">kg</td><td style="padding:4px 8px;color:var(--green)">12500</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--text3)">Aceite</td><td style="padding:4px 8px;color:var(--text3)">1</td><td style="padding:4px 8px;color:var(--text3)">litro</td><td style="padding:4px 8px;color:var(--green)">18000</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="descargarPlantilla()" style="margin-top:10px;width:100%">⬇️ Descargar plantilla CSV</button>
+        </div>
+      </div>
+
+      <!-- Resultados del archivo -->
+      <div id="import-resultados" style="display:none;margin-top:14px">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--green)"></span> Productos del archivo</div>
+          <div id="import-items" class="item-list"></div>
+          <div style="margin-top:12px">
+            <label class="input-label">Supermercado (opcional)</label>
+            <input id="import-super" placeholder="Ej: Stock, Ñanduti, Shopping...">
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn-green" style="flex:1" onclick="guardarImport()">✅ Guardar en Stock</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelarImport()">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Carga manual rápida</div>
+        <div class="section-sub" style="margin-bottom:10px">También podés cargar manualmente desde la sección Stock.</div>
+        <button class="btn btn-outline" onclick="showScreen('stock')">Ir a Stock →</button>
+      </div>
+    </div>
+
+    <!-- ===== RECETAS ===== -->
+    <div class="screen" id="screen-recetas">
+      <div class="section-title">🍽️ Mis Recetas</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Nueva receta</div>
+        <div class="input-group">
+          <label class="input-label">Nombre de la comida</label>
+          <input id="r-nombre" placeholder="Ej: Arroz Quesú, Strogonoff...">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Tipo</label>
+          <select id="r-tipo">
+            <option>Desayuno</option>
+            <option>Almuerzo</option>
+            <option>Merienda</option>
+          </select>
+        </div>
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:8px"><span class="dot" style="background:var(--purple)"></span> Ingredientes</div>
+        <div id="r-ingredientes-list" class="item-list" style="margin-bottom:10px"></div>
+        <div class="grid-3" style="margin-bottom:8px">
+          <div class="input-group" style="margin:0">
+            <input id="r-ing-nombre" placeholder="Ingrediente">
+          </div>
+          <div class="input-group" style="margin:0">
+            <input id="r-ing-cant" type="number" step="0.001" placeholder="Cantidad">
+          </div>
+          <div class="input-group" style="margin:0">
+            <select id="r-ing-unidad">
+              <option>g</option>
+              <option>kg</option>
+              <option>ml</option>
+              <option>unid</option>
+              <option>mazo</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="agregarIngrediente()" style="margin-bottom:12px; width:100%">+ Añadir ingrediente</button>
+        <button class="btn btn-green" onclick="guardarReceta()">💾 Guardar Receta</button>
+      </div>
+
+      <div id="lista-recetas" class="item-list">
+        <div class="empty"><div class="empty-icon">🍳</div><div class="empty-text">Aún no tenés recetas guardadas</div></div>
+      </div>
+    </div>
+
+    <!-- ===== PLAN ===== -->
+    <div class="screen" id="screen-plan">
+      <div class="section-title">📅 Planificador IA</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span> Generar plan automático</div>
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="input-group">
+            <label class="input-label">Días</label>
+            <select id="plan-dias">
+              <option value="7">7 días</option>
+              <option value="14" selected>14 días</option>
+              <option value="30">30 días</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Presupuesto Gs</label>
+            <input id="plan-presupuesto" type="number" placeholder="Opcional">
+          </div>
+        </div>
+        <button class="btn btn-purple" onclick="generarPlanIA()">🤖 Generar con IA</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Agregar día manualmente</div>
+        <div class="grid-2" style="margin-bottom:8px">
+          <div class="input-group">
+            <label class="input-label">Día</label>
+            <input id="p-dia" placeholder="Ej: Día 1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Tipo</label>
+            <select id="p-tipo">
+              <option>Desayuno</option>
+              <option>Almuerzo</option>
+              <option>Merienda</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Comida / Receta</label>
+          <input id="p-comida" placeholder="Ej: Arroz Quesú, Tallarín...">
+        </div>
+        <button class="btn btn-blue" onclick="agregarAlPlan()">+ Agregar</button>
+      </div>
+
+      <div id="lista-plan"></div>
+    </div>
+
+    <!-- ===== CONSUMO ===== -->
+    <div class="screen" id="screen-consumo">
+      <div class="section-title">🔥 Registrar Consumo</div>
+      <div class="section-sub">Registrá lo que usaste y se descuenta automáticamente del stock.</div>
+
+      <div class="card">
+        <div class="input-group">
+          <label class="input-label">Producto</label>
+          <select id="c-producto">
+            <option value="">-- Seleccionar producto --</option>
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">Cantidad usada</label>
+            <input id="c-cant" type="number" step="0.001" placeholder="0">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Comida</label>
+            <select id="c-comida">
+              <option>Desayuno</option>
+              <option>Almuerzo</option>
+              <option>Merienda</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-orange" onclick="registrarConsumo()">📉 Descontar del Stock</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Historial de hoy</div>
+        <div id="lista-consumo" class="item-list">
+          <div class="empty"><div class="empty-text">Sin registros hoy</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRECIOS ===== -->
+    <div class="screen" id="screen-precios">
+      <div class="section-title">🏪 Precios por Super</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Cargar precio</div>
+        <div class="grid-2" style="margin-bottom:8px">
+          <div class="input-group">
+            <label class="input-label">Supermercado</label>
+            <input id="sp-super" placeholder="Ej: Stock, Ñanduti...">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Producto</label>
+            <input id="sp-producto" placeholder="Ej: Arroz...">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Precio (Gs)</label>
+          <input id="sp-precio" type="number" placeholder="0">
+        </div>
+        <button class="btn btn-blue" onclick="agregarPrecio()">+ Agregar precio</button>
+      </div>
+
+      <div id="lista-precios" class="item-list">
+        <div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>
+      </div>
+    </div>
+
+    <!-- ===== COMPRA INTELIGENTE ===== -->
+    <div class="screen" id="screen-compra">
+      <div class="section-title">🛒 Compra Inteligente</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> Mi lista de compras</div>
+        <div class="grid-3" style="margin-bottom:8px">
+          <div class="input-group" style="margin:0">
+            <input id="lc-prod" placeholder="Producto">
+          </div>
+          <div class="input-group" style="margin:0">
+            <input id="lc-cant" type="number" step="0.001" placeholder="Cant.">
+          </div>
+          <div class="input-group" style="margin:0">
+            <select id="lc-unidad">
+              <option>kg</option>
+              <option>unid</option>
+              <option>g</option>
+              <option>litro</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-outline" onclick="agregarListaCompra()" style="margin-bottom:12px">+ Agregar a lista</button>
+        <div id="lista-compra-items" class="item-list" style="margin-bottom:12px">
+          <div class="empty"><div class="empty-text">Lista vacía</div></div>
+        </div>
+        <button class="btn btn-green" onclick="optimizarCompra()">🧠 Optimizar compra con IA</button>
+      </div>
+
+      <div id="resultado-compra" style="display:none">
+        <div class="result-box">
+          <div class="result-title">✅ Plan óptimo de compra</div>
+          <div id="resultado-detalle"></div>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-title">Comparativa por supermercado</div>
+          <canvas id="chart-compare" height="150"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <!-- NAV BOTTOM -->
+  <div class="nav-bottom">
+    <button class="nav-btn active" onclick="showScreen('dashboard')" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('stock')" id="nav-stock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Stock</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('recetas')" id="nav-recetas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+      <span>Recetas</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('plan')" id="nav-plan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Plan</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('compra')" id="nav-compra">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>Compra</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('precios')" id="nav-precios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span>Precios</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('consumo')" id="nav-consumo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11l2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/></svg>
+      <span>Consumo</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('ocr')" id="nav-ocr">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>OCR</span>
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================
+// DATA STORE
+// ============================
+let DB = JSON.parse(localStorage.getItem('foodcontrol_db')) || {
+  stock: [],
+  recetas: [],
+  plan: [],
+  precios: [],
+  listaCompra: [],
+  consumo: []
+};
+
+let ocrDetectados = [];
+let recetaTempIngredientes = [];
+let chartStock = null, chartCostos = null, chartCompare = null;
+
+function saveDB() {
+  localStorage.setItem('foodcontrol_db', JSON.stringify(DB));
+}
+
+// ============================
+// UI NAVIGATION
+// ============================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  
+  if (id === 'dashboard') renderDashboard();
+renderResultadoFit();
+renderHistorialPeso();
+  if (id === 'stock') renderStock();
+  if (id === 'consumo') renderConsumoSelect();
+  if (id === 'plan') renderPlan();
+  if (id === 'recetas') renderRecetas();
+  if (id === 'precios') renderPrecios();
+  if (id === 'compra') renderListaCompra();
+}
+
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = '', 2500);
+}
+
+// ============================
+// GREETING
+// ============================
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Buenos días ☀️' : h < 18 ? 'Buenas tardes 🌤️' : 'Buenas noches 🌙';
+  document.getElementById('greeting-text').textContent = g;
+}
+
+// ============================
+// DASHBOARD
+// ============================
+function renderDashboard() {
+  const stock = DB.stock;
+  const total = stock.reduce((s, p) => s + (p.cantidad * p.precio), 0);
+  document.getElementById('stat-productos').textContent = stock.length;
+  document.getElementById('stat-total').textContent = formatGs(total);
+  document.getElementById('stat-dias').textContent = [...new Set(DB.plan.map(p => p.dia))].length;
+
+  // Ahorro estimado (si hay precios cargados)
+  let ahorro = 0;
+  if (DB.precios.length > 0) {
+    const grupos = {};
+    DB.precios.forEach(p => {
+      if (!grupos[p.producto]) grupos[p.producto] = [];
+      grupos[p.producto].push(p.precio);
+    });
+    let maxTotal = 0, minTotal = 0;
+    Object.values(grupos).forEach(arr => {
+      maxTotal += Math.max(...arr);
+      minTotal += Math.min(...arr);
+    });
+    if (maxTotal > 0) ahorro = Math.round(((maxTotal - minTotal) / maxTotal) * 100);
+  }
+  document.getElementById('stat-ahorro').textContent = ahorro + '%';
+
+  // Alertas stock bajo
+  const alertas = stock.filter(p => {
+    const saldo = p.cantidad - p.usado;
+    return saldo / p.cantidad < 0.2 && p.cantidad > 0;
+  });
+  const alertaContainer = document.getElementById('lista-alertas');
+  if (alertas.length === 0) {
+    alertaContainer.innerHTML = '<div class="empty"><div class="empty-text">Sin alertas 🎉</div></div>';
+  } else {
+    alertaContainer.innerHTML = alertas.map(p => {
+      const saldo = p.cantidad - p.usado;
+      return `<div class="item">
+        <div class="item-icon" style="background:rgba(239,68,68,0.15)">⚠️</div>
+        <div class="item-info">
+          <div class="item-name">${p.nombre}</div>
+          <div class="item-sub">Saldo: ${saldo.toFixed(3)} ${p.unidad}</div>
+        </div>
+        <div class="item-right"><span class="item-badge badge-red">Bajo</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Gráfico stock
+  const labels = stock.map(p => p.nombre).slice(0, 10);
+  const data = stock.map(p => Math.max(0, p.cantidad - p.usado)).slice(0, 10);
+  if (chartStock) chartStock.destroy();
+  const ctx1 = document.getElementById('chart-stock').getContext('2d');
+  chartStock = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Saldo',
+        data,
+        backgroundColor: 'rgba(34,197,94,0.6)',
+        borderColor: 'rgba(34,197,94,1)',
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+
+  // Gráfico costos por plan
+  const planLabels = DB.plan.slice(0, 10).map(p => p.dia + ' ' + p.tipo.substring(0, 3));
+  const planCostos = DB.plan.slice(0, 10).map(p => calcularCostoComida(p.comida));
+  if (chartCostos) chartCostos.destroy();
+  const ctx2 = document.getElementById('chart-costos').getContext('2d');
+  chartCostos = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: planLabels.length > 0 ? planLabels : ['Sin datos'],
+      datasets: [{
+        label: 'Costo Gs',
+        data: planCostos.length > 0 ? planCostos : [0],
+        borderColor: 'rgba(168,85,247,1)',
+        backgroundColor: 'rgba(168,85,247,0.1)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgba(168,85,247,1)',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+}
+
+// ============================
+// STOCK
+// ============================
+function agregarStock() {
+  const nombre = document.getElementById('s-nombre').value.trim();
+  const cant = parseFloat(document.getElementById('s-cant').value);
+  const unidad = document.getElementById('s-unidad').value;
+  const precio = parseFloat(document.getElementById('s-precio').value) || 0;
+
+  if (!nombre || isNaN(cant) || cant <= 0) { toast('Completá nombre y cantidad', true); return; }
+
+  // Check if exists
+  const exist = DB.stock.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if (exist) {
+    exist.cantidad += cant;
+    exist.precio = precio || exist.precio;
+    toast(`✅ Stock actualizado: +${cant} ${unidad}`);
+  } else {
+    DB.stock.push({ nombre, cantidad: cant, unidad, precio, usado: 0 });
+    toast('✅ Producto agregado');
+  }
+
+  saveDB();
+  document.getElementById('s-nombre').value = '';
+  document.getElementById('s-cant').value = '';
+  document.getElementById('s-precio').value = '';
+  renderStock();
+}
+
+function renderStock() {
+  const container = document.getElementById('lista-stock');
+  if (DB.stock.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Agregá productos a tu stock</div></div>';
+    return;
+  }
+  container.innerHTML = DB.stock.map((p, i) => {
+    const saldo = p.cantidad - p.usado;
+    const pct = Math.max(0, Math.min(100, (saldo / p.cantidad) * 100));
+    const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--orange)' : 'var(--red)';
+    const badge = pct > 50 ? 'badge-green' : pct > 20 ? 'badge-orange' : 'badge-red';
+    const label = pct > 50 ? 'OK' : pct > 20 ? 'BAJO' : 'CRÍTICO';
+    const total = (p.cantidad * p.precio).toFixed(0);
+    return `<div class="item">
+      <div class="item-icon" style="background:${color}22; font-size:20px">
+        ${getEmoji(p.nombre)}
+      </div>
+      <div class="item-info" style="flex:1">
+        <div class="item-name">${p.nombre}</div>
+        <div class="item-sub">Saldo: <strong>${saldo.toFixed(3)}</strong> ${p.unidad} | Gs ${formatGs(p.precio)}/u</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%; background:${color}"></div></div>
+      </div>
+      <div class="item-right" style="margin-left:8px">
+        <span class="item-badge ${badge}">${label}</span>
+        <div style="font-size:11px; color:var(--text3); margin-top:4px">Gs ${formatGs(total)}</div>
+        <button onclick="eliminarStock(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;margin-top:4px">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function eliminarStock(i) {
+  DB.stock.splice(i, 1);
+  saveDB();
+  renderStock();
+  toast('Producto eliminado');
+}
+
+// ============================
+// OCR
+// ============================
+async function procesarOCR(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('ocr-icon').textContent = '⏳';
+  document.getElementById('ocr-text').textContent = 'Leyendo imagen con OCR...';
+  document.getElementById('ocr-text').classList.add('pulsing');
+
+  try {
+    // Step 1: Tesseract OCR - usar español + inglés para mejor cobertura
+    const { data: { text } } = await Tesseract.recognize(file, 'spa+eng', {
+      tessedit_pageseg_mode: '6', // Assume uniform block of text
+    });
+
+    document.getElementById('ocr-text').textContent = 'Interpretando con IA...';
+
+    // Step 2: Claude AI interpreta el texto crudo para extraer productos y precios
+    const productos = await extraerProductosConIA(text);
+    ocrDetectados = productos;
+
+    document.getElementById('ocr-icon').textContent = productos.length > 0 ? '✅' : '⚠️';
+    document.getElementById('ocr-text').textContent = productos.length > 0
+      ? `${productos.length} productos detectados`
+      : 'No se detectaron productos';
+    document.getElementById('ocr-text').classList.remove('pulsing');
+
+    const itemsContainer = document.getElementById('ocr-items');
+    if (productos.length > 0) {
+      itemsContainer.innerHTML = productos.map((p, i) => `
+        <div class="item" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div class="item-info">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Producto</div>
+            <input value="${escapeHtml(p.nombre)}" onchange="ocrDetectados[${i}].nombre=this.value"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:700;width:100%;padding:6px 10px">
+          </div>
+          <div class="grid-2" style="gap:6px">
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Cantidad</div>
+              <input type="number" value="${p.cantidad}" onchange="ocrDetectados[${i}].cantidad=+this.value"
+                style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--text);width:100%">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Precio (Gs)</div>
+              <input type="number" value="${p.precio}" onchange="ocrDetectados[${i}].precio=+this.value"
+                style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--green);font-weight:800;width:100%">
+            </div>
+          </div>
+          <button onclick="ocrDetectados.splice(${i},1);renderOcrItems()"
+            style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--red);border-radius:8px;padding:4px;font-size:12px;cursor:pointer;width:100%">
+            🗑 Eliminar
+          </button>
+        </div>`).join('');
+    } else {
+      itemsContainer.innerHTML = `<div class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">No se pudieron detectar productos.<br>Intentá con mejor iluminación o menor ángulo.</div>
+        <details style="margin-top:12px;font-size:11px;color:var(--text3);cursor:pointer">
+          <summary>Ver texto extraído</summary>
+          <pre style="white-space:pre-wrap;font-size:10px;background:var(--bg);padding:8px;border-radius:8px;margin-top:6px;max-height:120px;overflow:auto">${escapeHtml(text.substring(0, 500))}</pre>
+        </details>
+      </div>`;
+    }
+    document.getElementById('ocr-resultados').style.display = 'block';
+
+  } catch (e) {
+    console.error('OCR Error:', e);
+    document.getElementById('ocr-icon').textContent = '❌';
+    document.getElementById('ocr-text').textContent = 'Error al procesar imagen';
+    document.getElementById('ocr-text').classList.remove('pulsing');
+    toast('Error en OCR. Intentá con otra imagen.', true);
+  }
+}
+
+function renderOcrItems() {
+  // Re-render after delete without re-running OCR
+  const itemsContainer = document.getElementById('ocr-items');
+  if (ocrDetectados.length === 0) {
+    itemsContainer.innerHTML = '<div class="empty"><div class="empty-text">Sin productos</div></div>';
+    return;
+  }
+  itemsContainer.innerHTML = ocrDetectados.map((p, i) => `
+    <div class="item" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div class="item-info">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Producto</div>
+        <input value="${escapeHtml(p.nombre)}" onchange="ocrDetectados[${i}].nombre=this.value"
+          style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:700;width:100%;padding:6px 10px">
+      </div>
+      <div class="grid-2" style="gap:6px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Cantidad</div>
+          <input type="number" value="${p.cantidad}" onchange="ocrDetectados[${i}].cantidad=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--text);width:100%">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Precio (Gs)</div>
+          <input type="number" value="${p.precio}" onchange="ocrDetectados[${i}].precio=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--green);font-weight:800;width:100%">
+        </div>
+      </div>
+      <button onclick="ocrDetectados.splice(${i},1);renderOcrItems()"
+        style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--red);border-radius:8px;padding:4px;font-size:12px;cursor:pointer;width:100%">
+        🗑 Eliminar
+      </button>
+    </div>`).join('');
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function extraerProductosConIA(textoOCR) {
+  // Primero intentar extracción inteligente local (sin IA) como fallback rápido
+  const productosLocal = extraerProductosOCRMejorado(textoOCR);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Sos un asistente que analiza tickets/facturas de supermercados de Paraguay. 
+El texto fue extraído con OCR y puede tener errores tipográficos, caracteres extraños o líneas mal alineadas.
+Los precios en Paraguay son en Guaraníes (Gs) y suelen ser números grandes sin decimales (ej: 5000, 15900, 123000).
+Los separadores de miles pueden ser puntos (15.900) o el número sin separador (15900).
+Analizá este texto y extraé SOLO los productos comprados con su nombre limpio, cantidad y precio unitario.
+
+REGLAS:
+- Ignorá líneas que sean totales, subtotales, IVA, descuentos, encabezados o pie de página
+- Si hay "x2", "x3", etc. eso es la cantidad
+- El precio que importa es el precio UNITARIO, no el subtotal de línea
+- Limpiá los nombres de productos (quitá códigos de barras, abreviaturas raras)
+- Si no podés determinar el precio con certeza, poné 0
+- Respondé SOLO con JSON válido, sin texto adicional, sin markdown
+
+Formato de respuesta:
+[{"nombre":"Arroz Cañuelas 1kg","cantidad":1,"precio":12500,"unidad":"unid"},...]
+
+Texto del ticket:
+${textoOCR.substring(0, 2000)}`
+        }]
+      })
+    });
+
+    if (!response.ok) throw new Error('API error: ' + response.status);
+    const data = await response.json();
+    const rawText = data.content.map(c => c.text || '').join('');
+    const clean = rawText.replace(/```json|```/gi, '').trim();
+    const parsed = JSON.parse(clean);
+
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map(p => ({
+        nombre: String(p.nombre || '').substring(0, 50),
+        cantidad: parseFloat(p.cantidad) || 1,
+        precio: Math.abs(parseInt(p.precio) || 0),
+        unidad: p.unidad || 'unid'
+      })).filter(p => p.nombre.length > 1);
+    }
+  } catch (err) {
+    console.warn('IA fallback a extracción local:', err.message);
+  }
+
+  // Fallback: extracción local mejorada
+  return productosLocal;
+}
+
+// Extracción local mejorada (fallback si falla la API)
+function extraerProductosOCRMejorado(text) {
+  const lineas = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+  const productos = [];
+
+  // Palabras que indican que la línea NO es un producto
+  const ignorar = /total|subtotal|iva|descuento|efectivo|cambio|vuelto|ruc|timbrado|factura|ticket|caja|cajero|fecha|hora|gracias|nro|cuil|cuit|\btel\b|\bwww\b|\.com/i;
+
+  lineas.forEach(linea => {
+    if (ignorar.test(linea)) return;
+
+    // Patrones de precio en guaraníes (números grandes, con o sin separador de miles)
+    // Ej: 15.900 | 15,900 | 15900 | 1.500.000 | 150000
+    const patronesPrecio = [
+      /(\d{1,3}(?:[.,]\d{3}){1,3})\s*$/, // 15.900 o 1.500.000 al final
+      /(\d{1,3}(?:[.,]\d{3})+)/,           // 15.900 en cualquier posición
+      /\b(\d{4,7})\b/,                      // número de 4-7 dígitos (1000-9999999 Gs)
+    ];
+
+    let precioStr = null;
+    let precioNum = 0;
+    let matchIndex = -1;
+
+    for (const patron of patronesPrecio) {
+      const m = linea.match(patron);
+      if (m) {
+        precioStr = m[1];
+        matchIndex = m.index;
+        // Normalizar: quitar separadores de miles
+        const normalizado = precioStr.replace(/[.,]/g, '');
+        precioNum = parseInt(normalizado);
+        // Filtrar precios inverosímiles (< 100 Gs o > 50.000.000 Gs)
+        if (precioNum >= 100 && precioNum <= 50000000) break;
+        precioNum = 0;
+      }
+    }
+
+    if (precioNum === 0) return;
+
+    // Extraer cantidad (ej: "2 x", "x3", "2UN")
+    const cantMatch = linea.match(/^(\d+)\s*[xX*]/);
+    const cantidad = cantMatch ? parseInt(cantMatch[1]) : 1;
+
+    // Limpiar nombre: quitar el precio y números sueltos
+    let nombre = linea;
+    if (precioStr) nombre = nombre.replace(precioStr, '');
+    nombre = nombre
+      .replace(/^\d+\s*[xX*]\s*/, '') // quitar cantidad al inicio
+      .replace(/\b\d{4,}\b/g, '')      // quitar números de 4+ dígitos (códigos, precios)
+      .replace(/[*|#@%\\\/]/g, ' ')    // quitar caracteres especiales
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .substring(0, 40);
+
+    if (nombre.length > 2) {
+      productos.push({
+        nombre: capitalize(nombre),
+        cantidad,
+        precio: precioNum,
+        unidad: 'unid'
+      });
+    }
+  });
+
+  // Deduplicar por nombre similar
+  const unicos = [];
+  productos.forEach(p => {
+    const existe = unicos.find(u => u.nombre.toLowerCase() === p.nombre.toLowerCase());
+    if (!existe) unicos.push(p);
+  });
+
+  return unicos.slice(0, 30);
+}
+
+function guardarOCR() {
+  if (ocrDetectados.length === 0) { toast('Sin productos para guardar', true); return; }
+  const superNombre = document.getElementById('ocr-super').value || 'OCR';
+  ocrDetectados.forEach(p => {
+    const exist = DB.stock.find(s => s.nombre.toLowerCase() === p.nombre.toLowerCase());
+    if (exist) {
+      exist.cantidad += p.cantidad;
+    } else {
+      DB.stock.push({ nombre: p.nombre, cantidad: p.cantidad, unidad: p.unidad || 'unid', precio: p.precio, usado: 0 });
+    }
+    if (p.precio > 0) {
+      DB.precios.push({ super: superNombre, producto: p.nombre.toLowerCase(), precio: p.precio });
+    }
+  });
+  saveDB();
+  toast(`✅ ${ocrDetectados.length} productos guardados`);
+  document.getElementById('ocr-resultados').style.display = 'none';
+  document.getElementById('ocr-icon').textContent = '📷';
+  document.getElementById('ocr-text').textContent = 'Tocá para seleccionar imagen';
+  ocrDetectados = [];
+}
+
+// ============================
+// RECETAS
+// ============================
+function agregarIngrediente() {
+  const nombre = document.getElementById('r-ing-nombre').value.trim();
+  const cant = parseFloat(document.getElementById('r-ing-cant').value);
+  const unidad = document.getElementById('r-ing-unidad').value;
+  if (!nombre || isNaN(cant)) { toast('Completá ingrediente y cantidad', true); return; }
+  recetaTempIngredientes.push({ nombre, cantidad: cant, unidad });
+  document.getElementById('r-ing-nombre').value = '';
+  document.getElementById('r-ing-cant').value = '';
+  renderIngredientesTemp();
+}
+
+function renderIngredientesTemp() {
+  document.getElementById('r-ingredientes-list').innerHTML = recetaTempIngredientes.map((ing, i) =>
+    `<div class="item">
+      <div class="item-icon" style="background:rgba(168,85,247,0.15)">${getEmoji(ing.nombre)}</div>
+      <div class="item-info"><div class="item-name">${ing.nombre}</div><div class="item-sub">${ing.cantidad} ${ing.unidad}</div></div>
+      <button onclick="recetaTempIngredientes.splice(${i},1);renderIngredientesTemp()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">×</button>
+    </div>`).join('');
+}
+
+function guardarReceta() {
+  const nombre = document.getElementById('r-nombre').value.trim();
+  const tipo = document.getElementById('r-tipo').value;
+  if (!nombre) { toast('Poné un nombre a la receta', true); return; }
+  if (recetaTempIngredientes.length === 0) { toast('Agregá al menos un ingrediente', true); return; }
+
+  DB.recetas.push({ nombre, tipo, ingredientes: [...recetaTempIngredientes] });
+  saveDB();
+  recetaTempIngredientes = [];
+  document.getElementById('r-nombre').value = '';
+  document.getElementById('r-ingredientes-list').innerHTML = '';
+  renderRecetas();
+  toast(`✅ Receta "${nombre}" guardada`);
+}
+
+function renderRecetas() {
+  const container = document.getElementById('lista-recetas');
+  if (DB.recetas.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🍳</div><div class="empty-text">Aún no tenés recetas guardadas</div></div>';
+    return;
+  }
+  container.innerHTML = DB.recetas.map((r, i) => {
+    const costo = calcularCostoReceta(r);
+    const tipoColor = { Desayuno: 'badge-orange', Almuerzo: 'badge-green', Merienda: 'badge-purple' };
+    return `<div class="item">
+      <div class="item-icon" style="background:rgba(34,197,94,0.15)">🍽️</div>
+      <div class="item-info">
+        <div class="item-name">${r.nombre}</div>
+        <div class="item-sub">${r.ingredientes.length} ingredientes</div>
+        ${r.ingredientes.slice(0,3).map(ing => `<span style="font-size:11px;color:var(--text3)">${ing.nombre} ${ing.cantidad}${ing.unidad} </span>`).join('')}
+      </div>
+      <div class="item-right">
+        <span class="item-badge ${tipoColor[r.tipo] || 'badge-blue'}">${r.tipo}</span>
+        <div class="item-value" style="color:var(--green);font-size:13px;margin-top:4px">Gs ${formatGs(costo)}</div>
+        <button onclick="eliminarReceta(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;margin-top:4px">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function eliminarReceta(i) {
+  DB.recetas.splice(i, 1);
+  saveDB();
+  renderRecetas();
+}
+
+function calcularCostoReceta(r) {
+  return r.ingredientes.reduce((total, ing) => {
+    const prod = DB.stock.find(p => p.nombre.toLowerCase().includes(ing.nombre.toLowerCase()) || ing.nombre.toLowerCase().includes(p.nombre.toLowerCase()));
+    return total + (prod ? prod.precio * ing.cantidad : 0);
+  }, 0);
+}
+
+function calcularCostoComida(nombreComida) {
+  const receta = DB.recetas.find(r => r.nombre.toLowerCase().includes(nombreComida.toLowerCase()) || nombreComida.toLowerCase().includes(r.nombre.toLowerCase()));
+  return receta ? calcularCostoReceta(receta) : 0;
+}
+
+// ============================
+// PLAN IA
+// ============================
+const comidasBase = [
+  { nombre: 'Café con leche', tipo: 'Desayuno', ingredientes: [{nombre:'Leche', cantidad:200, unidad:'ml'}] },
+  { nombre: 'Mbeju', tipo: 'Desayuno', ingredientes: [{nombre:'Almidón', cantidad:0.03, unidad:'kg'},{nombre:'Queso Paraguay', cantidad:0.02, unidad:'kg'}] },
+  { nombre: 'Mixto de queso', tipo: 'Desayuno', ingredientes: [{nombre:'Queso Paraguay', cantidad:0.025, unidad:'kg'}] },
+  { nombre: 'Cocido con leche', tipo: 'Merienda', ingredientes: [{nombre:'Leche', cantidad:200, unidad:'ml'}] },
+  { nombre: 'Arroz quesú', tipo: 'Almuerzo', ingredientes: [{nombre:'Arrocillo', cantidad:0.1, unidad:'kg'},{nombre:'Queso ricota', cantidad:0.04, unidad:'kg'}] },
+  { nombre: 'Tallarín con salsa', tipo: 'Almuerzo', ingredientes: [{nombre:'Fideos tallarín', cantidad:0.09, unidad:'kg'},{nombre:'Tomate liza', cantidad:0.1, unidad:'kg'},{nombre:'Cebolla', cantidad:0.05, unidad:'kg'}] },
+  { nombre: 'Bife con huevo y arroz', tipo: 'Almuerzo', ingredientes: [{nombre:'Carnaza de segunda', cantidad:0.12, unidad:'kg'},{nombre:'Huevos Nutrinuevos', cantidad:2, unidad:'unid'},{nombre:'Arrocillo', cantidad:0.08, unidad:'kg'}] },
+  { nombre: 'Pollo grille con repollo', tipo: 'Almuerzo', ingredientes: [{nombre:'Filet pechuga fresca pechugón', cantidad:0.15, unidad:'kg'},{nombre:'Repollo blanco', cantidad:0.1, unidad:'kg'},{nombre:'Mandioca', cantidad:0.2, unidad:'kg'}] },
+  { nombre: 'Picadito de carne con tortilla', tipo: 'Almuerzo', ingredientes: [{nombre:'Carnaza de segunda', cantidad:0.12, unidad:'kg'},{nombre:'Papa negra', cantidad:0.15, unidad:'kg'},{nombre:'Huevos Nutrinuevos', cantidad:1, unidad:'unid'}] },
+  { nombre: 'Strogonoff de pollo', tipo: 'Almuerzo', ingredientes: [{nombre:'Filet pechuga fresca pechugón', cantidad:0.15, unidad:'kg'},{nombre:'Crema de leche 200g', cantidad:0.05, unidad:'kg'},{nombre:'Arrocillo', cantidad:0.08, unidad:'kg'}] },
+  { nombre: 'Caldo de arroz con queso', tipo: 'Almuerzo', ingredientes: [{nombre:'Arrocillo', cantidad:0.08, unidad:'kg'},{nombre:'Queso Paraguay', cantidad:0.03, unidad:'kg'},{nombre:'Arvejas', cantidad:0.04, unidad:'kg'}] },
+  { nombre: 'Marinera con ensalada de poroto', tipo: 'Almuerzo', ingredientes: [{nombre:'Carnaza de segunda', cantidad:0.12, unidad:'kg'},{nombre:'Poroto San Francisco', cantidad:0.08, unidad:'kg'},{nombre:'Harina maestra', cantidad:0.03, unidad:'kg'}] },
+];
+
+function generarPlanIA() {
+  const dias = parseInt(document.getElementById('plan-dias').value);
+  const presupuesto = parseFloat(document.getElementById('plan-presupuesto').value) || Infinity;
+
+  DB.plan = [];
+  const almuerzos = comidasBase.filter(c => c.tipo === 'Almuerzo');
+  const desayunos = comidasBase.filter(c => c.tipo === 'Desayuno');
+  const meriendas = comidasBase.filter(c => c.tipo === 'Merienda');
+
+  let gastoTotal = 0;
+
+  for (let i = 1; i <= dias; i++) {
+    const dia = 'Día ' + i;
+    const desayuno = desayunos[i % desayunos.length];
+    const almuerzo = almuerzos[i % almuerzos.length];
+    const merienda = meriendas[i % meriendas.length];
+
+    const costoAlmuerzo = calcularCostoRecetaRapida(almuerzo);
+    gastoTotal += costoAlmuerzo;
+
+    if (gastoTotal > presupuesto) break;
+
+    DB.plan.push({ dia, tipo: 'Desayuno', comida: desayuno.nombre, ingredientes: desayuno.ingredientes });
+    DB.plan.push({ dia, tipo: 'Almuerzo', comida: almuerzo.nombre, ingredientes: almuerzo.ingredientes });
+    DB.plan.push({ dia, tipo: 'Merienda', comida: merienda.nombre, ingredientes: merienda.ingredientes });
+  }
+
+  saveDB();
+  renderPlan();
+  toast(`✅ Plan de ${dias} días generado`);
+}
+
+function calcularCostoRecetaRapida(receta) {
+  if (!receta.ingredientes) return 0;
+  return receta.ingredientes.reduce((t, ing) => {
+    const p = DB.stock.find(s => s.nombre.toLowerCase().includes(ing.nombre.toLowerCase()) || ing.nombre.toLowerCase().includes(s.nombre.toLowerCase()));
+    return t + (p ? p.precio * ing.cantidad : 500);
+  }, 0);
+}
+
+function agregarAlPlan() {
+  const dia = document.getElementById('p-dia').value.trim();
+  const tipo = document.getElementById('p-tipo').value;
+  const comida = document.getElementById('p-comida').value.trim();
+  if (!dia || !comida) { toast('Completá todos los campos', true); return; }
+  DB.plan.push({ dia, tipo, comida });
+  saveDB();
+  renderPlan();
+  document.getElementById('p-dia').value = '';
+  document.getElementById('p-comida').value = '';
+  toast('✅ Agregado al plan');
+}
+
+function renderPlan() {
+  const container = document.getElementById('lista-plan');
+  if (DB.plan.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No hay plan. Generá con IA o agregá manualmente.</div></div>';
+    return;
+  }
+
+  const dias = [...new Set(DB.plan.map(p => p.dia))];
+  container.innerHTML = dias.map(dia => {
+    const items = DB.plan.filter(p => p.dia === dia);
+    const costoTotal = items.reduce((t, p) => t + calcularCostoComida(p.comida), 0);
+    const tipos = { Desayuno: null, Almuerzo: null, Merienda: null };
+    items.forEach(p => tipos[p.tipo] = p);
+
+    return `<div class="day-card">
+      <div class="day-header" onclick="toggleDay('${dia}')">
+        <div class="day-title">📅 ${dia}</div>
+        <div class="day-total">Gs ${formatGs(costoTotal)}</div>
+      </div>
+      <div class="day-body" id="day-${dia.replace(' ', '')}">
+        ${tipos.Desayuno ? `<div class="meal-item meal-desayuno">
+          <div class="meal-label">☀️ Desayuno</div>
+          <div class="meal-food">${tipos.Desayuno.comida}</div>
+          <div class="meal-cost">Gs ${formatGs(calcularCostoComida(tipos.Desayuno.comida))}</div>
+        </div>` : ''}
+        ${tipos.Almuerzo ? `<div class="meal-item meal-almuerzo">
+          <div class="meal-label">🌞 Almuerzo</div>
+          <div class="meal-food">${tipos.Almuerzo.comida}</div>
+          ${tipos.Almuerzo.ingredientes ? `<div class="meal-ingredients">${tipos.Almuerzo.ingredientes.map(i => `${i.nombre} ${i.cantidad}${i.unidad}`).join(' · ')}</div>` : ''}
+          <div class="meal-cost">Gs ${formatGs(calcularCostoComida(tipos.Almuerzo.comida))}</div>
+        </div>` : ''}
+        ${tipos.Merienda ? `<div class="meal-item meal-merienda">
+          <div class="meal-label">🌆 Merienda</div>
+          <div class="meal-food">${tipos.Merienda.comida}</div>
+          <div class="meal-cost">Gs ${formatGs(calcularCostoComida(tipos.Merienda.comida))}</div>
+        </div>` : ''}
+        <button onclick="eliminarDia('${dia}')" class="btn btn-outline btn-sm" style="margin-top:8px;color:var(--red)">🗑 Eliminar día</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDay(dia) {
+  const el = document.getElementById('day-' + dia.replace(' ', ''));
+  el.classList.toggle('open');
+}
+
+function eliminarDia(dia) {
+  DB.plan = DB.plan.filter(p => p.dia !== dia);
+  saveDB();
+  renderPlan();
+}
+
+// ============================
+// CONSUMO
+// ============================
+function renderConsumoSelect() {
+  const sel = document.getElementById('c-producto');
+  sel.innerHTML = '<option value="">-- Seleccionar producto --</option>' +
+    DB.stock.map(p => `<option value="${p.nombre}">${p.nombre} (${(p.cantidad - p.usado).toFixed(3)} ${p.unidad})</option>`).join('');
+  renderConsumo();
+}
+
+function registrarConsumo() {
+  const producto = document.getElementById('c-producto').value;
+  const cant = parseFloat(document.getElementById('c-cant').value);
+  const comida = document.getElementById('c-comida').value;
+  if (!producto || isNaN(cant) || cant <= 0) { toast('Seleccioná producto y cantidad', true); return; }
+
+  const prod = DB.stock.find(p => p.nombre === producto);
+  if (!prod) { toast('Producto no encontrado', true); return; }
+
+  const saldoActual = prod.cantidad - prod.usado;
+  if (cant > saldoActual) {
+    // Reajuste automático
+    prod.usado = prod.cantidad;
+    toast(`⚠️ Ajustado al máximo disponible (${saldoActual.toFixed(3)} ${prod.unidad})`);
+  } else {
+    prod.usado += cant;
+  }
+
+  const fecha = new Date().toLocaleDateString('es-PY');
+  DB.consumo.push({ fecha, producto, cantidad: cant, unidad: prod.unidad, comida });
+  saveDB();
+  renderConsumoSelect();
+  document.getElementById('c-cant').value = '';
+  toast(`✅ Descontado: ${cant} ${prod.unidad} de ${producto}`);
+}
+
+function renderConsumo() {
+  const hoy = new Date().toLocaleDateString('es-PY');
+  const items = DB.consumo.filter(c => c.fecha === hoy);
+  const container = document.getElementById('lista-consumo');
+  if (items.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Sin registros hoy</div></div>';
+    return;
+  }
+  container.innerHTML = items.reverse().map(c => {
+    const tipoColor = { Desayuno: 'badge-orange', Almuerzo: 'badge-green', Merienda: 'badge-purple', Otro: 'badge-blue' };
+    return `<div class="item">
+      <div class="item-icon" style="background:rgba(249,115,22,0.15)">${getEmoji(c.producto)}</div>
+      <div class="item-info">
+        <div class="item-name">${c.producto}</div>
+        <div class="item-sub">${c.cantidad} ${c.unidad}</div>
+      </div>
+      <span class="item-badge ${tipoColor[c.comida] || 'badge-blue'}">${c.comida}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================
+// PRECIOS
+// ============================
+function agregarPrecio() {
+  const sup = document.getElementById('sp-super').value.trim();
+  const prod = document.getElementById('sp-producto').value.trim();
+  const precio = parseFloat(document.getElementById('sp-precio').value);
+  if (!sup || !prod || isNaN(precio)) { toast('Completá todos los campos', true); return; }
+  DB.precios.push({ super: sup, producto: prod.toLowerCase(), precio });
+  saveDB();
+  document.getElementById('sp-super').value = '';
+  document.getElementById('sp-producto').value = '';
+  document.getElementById('sp-precio').value = '';
+  renderPrecios();
+  toast('✅ Precio guardado');
+}
+
+function renderPrecios() {
+  const container = document.getElementById('lista-precios');
+  if (DB.precios.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>';
+    return;
+  }
+
+  // Group by product
+  const grupos = {};
+  DB.precios.forEach(p => {
+    if (!grupos[p.producto]) grupos[p.producto] = [];
+    grupos[p.producto].push(p);
+  });
+
+  container.innerHTML = Object.entries(grupos).map(([prod, precios]) => {
+    const minPrecio = Math.min(...precios.map(p => p.precio));
+    return `<div class="item">
+      <div class="item-icon" style="background:rgba(59,130,246,0.15)">${getEmoji(prod)}</div>
+      <div class="item-info">
+        <div class="item-name">${capitalize(prod)}</div>
+        <div class="item-sub">${precios.map(p => `${p.super}: Gs ${formatGs(p.precio)}`).join(' · ')}</div>
+      </div>
+      <div class="item-right">
+        <div class="item-value" style="color:var(--green);font-size:13px">Min: Gs ${formatGs(minPrecio)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================
+// LISTA DE COMPRA + OPTIMIZADOR
+// ============================
+function agregarListaCompra() {
+  const prod = document.getElementById('lc-prod').value.trim();
+  const cant = parseFloat(document.getElementById('lc-cant').value);
+  const unidad = document.getElementById('lc-unidad').value;
+  if (!prod || isNaN(cant)) { toast('Completá producto y cantidad', true); return; }
+  DB.listaCompra.push({ producto: prod.toLowerCase(), cantidad: cant, unidad });
+  saveDB();
+  document.getElementById('lc-prod').value = '';
+  document.getElementById('lc-cant').value = '';
+  renderListaCompra();
+  toast('✅ Agregado a la lista');
+}
+
+function renderListaCompra() {
+  const container = document.getElementById('lista-compra-items');
+  if (DB.listaCompra.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Lista vacía</div></div>';
+    return;
+  }
+  container.innerHTML = DB.listaCompra.map((item, i) => `
+    <div class="item">
+      <div class="item-icon" style="background:rgba(34,197,94,0.15)">${getEmoji(item.producto)}</div>
+      <div class="item-info">
+        <div class="item-name">${capitalize(item.producto)}</div>
+        <div class="item-sub">${item.cantidad} ${item.unidad}</div>
+      </div>
+      <button onclick="DB.listaCompra.splice(${i},1);saveDB();renderListaCompra()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">×</button>
+    </div>`).join('');
+}
+
+function optimizarCompra() {
+  if (DB.listaCompra.length === 0) { toast('Agregá productos a la lista', true); return; }
+
+  const resultadoDiv = document.getElementById('resultado-compra');
+  const detalleDiv = document.getElementById('resultado-detalle');
+  
+  let totalOptimo = 0;
+  let rows = '';
+  const porSuper = {};
+
+  DB.listaCompra.forEach(item => {
+    const opciones = DB.precios.filter(p => 
+      p.producto.includes(item.producto) || item.producto.includes(p.producto)
+    );
+
+    if (opciones.length === 0) {
+      rows += `<div class="result-row"><span>${capitalize(item.producto)}</span><span style="color:var(--text3)">Sin datos de precio</span></div>`;
+      return;
+    }
+
+    const mejor = opciones.reduce((a, b) => a.precio < b.precio ? a : b);
+    const costo = mejor.precio * item.cantidad;
+    totalOptimo += costo;
+
+    rows += `<div class="result-row">
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})</span>
+      <span>${mejor.super} · Gs ${formatGs(costo)}</span>
+    </div>`;
+
+    if (!porSuper[mejor.super]) porSuper[mejor.super] = 0;
+    porSuper[mejor.super] += costo;
+  });
+
+  rows += `<div class="result-row"><span>💰 TOTAL ÓPTIMO</span><span>Gs ${formatGs(totalOptimo)}</span></div>`;
+  detalleDiv.innerHTML = rows;
+  resultadoDiv.style.display = 'block';
+
+  // Comparación por super
+  const todosSupers = [...new Set(DB.precios.map(p => p.super))];
+  const totalesPorSuper = {};
+  todosSupers.forEach(sup => {
+    let total = 0;
+    DB.listaCompra.forEach(item => {
+      const precio = DB.precios.find(p => p.super === sup && (p.producto.includes(item.producto) || item.producto.includes(p.producto)));
+      if (precio) total += precio.precio * item.cantidad;
+    });
+    if (total > 0) totalesPorSuper[sup] = total;
+  });
+
+  if (Object.keys(totalesPorSuper).length > 0) {
+    if (chartCompare) chartCompare.destroy();
+    const ctx = document.getElementById('chart-compare').getContext('2d');
+    chartCompare = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(totalesPorSuper),
+        datasets: [{
+          data: Object.values(totalesPorSuper),
+          backgroundColor: Object.keys(totalesPorSuper).map((_, i) => 
+            ['rgba(34,197,94,0.7)', 'rgba(59,130,246,0.7)', 'rgba(249,115,22,0.7)', 'rgba(168,85,247,0.7)'][i % 4]
+          ),
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  toast('✅ Compra optimizada');
+}
+
+// ============================
+// UTILS
+// ============================
+function formatGs(n) {
+  return new Intl.NumberFormat('es-PY').format(Math.round(n));
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function getEmoji(nombre) {
+  const n = nombre.toLowerCase();
+  if (n.includes('pollo') || n.includes('pechuga')) return '🍗';
+  if (n.includes('carne') || n.includes('bife') || n.includes('carnaza')) return '🥩';
+  if (n.includes('arroz') || n.includes('arrocillo')) return '🍚';
+  if (n.includes('fideos') || n.includes('tallarín')) return '🍝';
+  if (n.includes('queso')) return '🧀';
+  if (n.includes('huevo')) return '🥚';
+  if (n.includes('papa')) return '🥔';
+  if (n.includes('tomate')) return '🍅';
+  if (n.includes('mandioca')) return '🌿';
+  if (n.includes('aceite')) return '🫙';
+  if (n.includes('leche')) return '🥛';
+  if (n.includes('cebolla')) return '🧅';
+  if (n.includes('harina') || n.includes('almidón')) return '🌾';
+  if (n.includes('ajo')) return '🧄';
+  if (n.includes('repollo')) return '🥬';
+  if (n.includes('huevo')) return '🥚';
+  if (n.includes('poroto') || n.includes('arveja')) return '🫘';
+  if (n.includes('berro') || n.includes('espinaca') || n.includes('albahaca')) return '🌿';
+  if (n.includes('café') || n.includes('cocido')) return '☕';
+  if (n.includes('choclo')) return '🌽';
+  return '📦';
+}
+
+// ============================
+// IMPORTAR ARCHIVO (Excel/CSV/TXT)
+// ============================
+let importDetectados = [];
+
+async function procesarArchivo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('import-icon').textContent = '⏳';
+  document.getElementById('import-text').textContent = 'Leyendo archivo...';
+
+  try {
+    let productos = [];
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      productos = await leerExcel(file);
+    } else if (ext === 'csv') {
+      productos = await leerCSV(file);
+    } else if (ext === 'txt') {
+      productos = await leerTXT(file);
+    } else {
+      throw new Error('Formato no soportado');
+    }
+
+    if (productos.length === 0) throw new Error('No se encontraron datos válidos');
+
+    importDetectados = productos;
+    document.getElementById('import-icon').textContent = '✅';
+    document.getElementById('import-text').textContent = `${productos.length} productos encontrados`;
+    renderImportItems();
+    document.getElementById('import-resultados').style.display = 'block';
+    toast(`✅ ${productos.length} filas leídas`);
+
+  } catch (err) {
+    document.getElementById('import-icon').textContent = '❌';
+    document.getElementById('import-text').textContent = 'Error al leer archivo';
+    toast('Error: ' + err.message, true);
+  }
+
+  // Reset input para permitir subir el mismo archivo de nuevo
+  event.target.value = '';
+}
+
+async function leerExcel(file) {
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  return parsearFilas(rows);
+}
+
+async function leerCSV(file) {
+  const text = await file.text();
+  // Detectar separador (coma, punto y coma, tab)
+  const sep = text.includes(';') ? ';' : text.includes('\t') ? '\t' : ',';
+  const rows = text.split('\n').map(l => l.split(sep).map(c => c.trim().replace(/^"|"$/g, '')));
+  return parsearFilas(rows);
+}
+
+async function leerTXT(file) {
+  const text = await file.text();
+  const lineas = text.split('\n').filter(l => l.trim().length > 2);
+  const productos = [];
+
+  lineas.forEach(l => {
+    // Intentar parsear líneas con tab, coma, punto y coma o múltiples espacios
+    const cols = l.split(/\t|;|,|\s{2,}/).map(c => c.trim());
+    if (cols.length >= 2) {
+      // Buscar columna de precio (número grande)
+      let nombre = '', cantidad = 1, precio = 0, unidad = 'unid';
+      cols.forEach(c => {
+        const num = parseFloat(c.replace(/[.,]/g, c.includes('.') && c.split('.')[1]?.length === 3 ? '' : '.'));
+        if (!isNaN(num) && num >= 100) {
+          precio = Math.round(num);
+        } else if (!isNaN(parseFloat(c)) && parseFloat(c) < 100 && parseFloat(c) > 0) {
+          cantidad = parseFloat(c);
+        } else if (c.length > 1 && isNaN(parseFloat(c))) {
+          if (['kg','g','ml','l','litro','unid','mazo'].includes(c.toLowerCase())) {
+            unidad = c.toLowerCase();
+          } else if (!nombre) {
+            nombre = c;
+          }
+        }
+      });
+      if (nombre && precio > 0) {
+        productos.push({ nombre: capitalize(nombre.substring(0, 40)), cantidad, precio, unidad });
+      }
+    }
+  });
+
+  return productos;
+}
+
+function parsearFilas(rows) {
+  if (rows.length === 0) return [];
+
+  const productos = [];
+  // Detectar si la primera fila es encabezado
+  const header = rows[0].map(c => String(c).toLowerCase().trim());
+  const tieneHeader = header.some(h => 
+    ['producto','nombre','item','descripcion','cantidad','precio','price'].some(k => h.includes(k))
+  );
+
+  // Mapear columnas por nombre o por posición
+  let colNombre = -1, colCantidad = -1, colUnidad = -1, colPrecio = -1;
+
+  if (tieneHeader) {
+    header.forEach((h, i) => {
+      if (h.includes('prod') || h.includes('nombre') || h.includes('item') || h.includes('desc')) colNombre = i;
+      else if (h.includes('cant') || h.includes('qty') || h.includes('cantidad')) colCantidad = i;
+      else if (h.includes('unid') || h.includes('unit')) colUnidad = i;
+      else if (h.includes('prec') || h.includes('price') || h.includes('valor') || h.includes('costo') || h.includes('monto')) colPrecio = i;
+    });
+  }
+
+  // Fallback posicional si no hay header reconocible
+  if (colNombre === -1) colNombre = 0;
+  if (colPrecio === -1) {
+    // Buscar la columna con números más grandes (precios en Gs)
+    const startRow = tieneHeader ? 1 : 0;
+    if (rows.length > startRow) {
+      let maxAvg = 0;
+      rows[startRow].forEach((_, ci) => {
+        const vals = rows.slice(startRow).map(r => parseFloat(String(r[ci] || '').replace(/[.,\s]/g, ''))).filter(n => !isNaN(n) && n > 0);
+        const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+        if (avg > maxAvg && ci !== colNombre) { maxAvg = avg; colPrecio = ci; }
+      });
+    }
+  }
+  if (colCantidad === -1 && colPrecio !== colNombre) {
+    // Buscar columna de cantidades pequeñas
+    colCantidad = [1,2,3].find(i => i !== colNombre && i !== colPrecio) ?? -1;
+  }
+
+  const startRow = tieneHeader ? 1 : 0;
+  rows.slice(startRow).forEach(row => {
+    const nombre = String(row[colNombre] || '').trim();
+    if (!nombre || nombre.length < 2) return;
+
+    // Parsear precio: acepta 15.900 o 15900 o "15,900"
+    const rawPrecio = String(row[colPrecio] ?? '');
+    const precioNum = parsearPrecioGs(rawPrecio);
+
+    const rawCant = String(row[colCantidad] ?? '1');
+    const cantidad = parseFloat(rawCant.replace(',', '.')) || 1;
+
+    const unidad = colUnidad >= 0 ? String(row[colUnidad] || 'unid').trim() : 'unid';
+
+    if (nombre.toLowerCase().includes('total') || nombre.toLowerCase().includes('subtotal')) return;
+
+    productos.push({
+      nombre: capitalize(nombre.substring(0, 40)),
+      cantidad,
+      precio: precioNum,
+      unidad: unidad || 'unid'
+    });
+  });
+
+  return productos.filter(p => p.nombre.length > 1).slice(0, 100);
+}
+
+function parsearPrecioGs(str) {
+  // Normaliza precios paraguayos: 15.900 → 15900 / 15,900 → 15900 / 15900 → 15900
+  str = String(str).trim();
+  // Si tiene punto como separador de miles (3 dígitos después del punto)
+  if (/^\d{1,3}(\.\d{3})+$/.test(str)) return parseInt(str.replace(/\./g, ''));
+  // Si tiene coma como separador de miles
+  if (/^\d{1,3}(,\d{3})+$/.test(str)) return parseInt(str.replace(/,/g, ''));
+  // Número puro
+  const n = parseInt(str.replace(/[^0-9]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+function renderImportItems() {
+  const container = document.getElementById('import-items');
+  if (importDetectados.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Sin productos</div></div>';
+    return;
+  }
+  container.innerHTML = importDetectados.map((p, i) => `
+    <div class="item" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Producto</div>
+        <input value="${escapeHtml(p.nombre)}" onchange="importDetectados[${i}].nombre=this.value"
+          style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:700;width:100%;padding:5px 10px">
+      </div>
+      <div class="grid-3" style="gap:6px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Cantidad</div>
+          <input type="number" value="${p.cantidad}" onchange="importDetectados[${i}].cantidad=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;color:var(--text);width:100%">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Unidad</div>
+          <select onchange="importDetectados[${i}].unidad=this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 6px;font-size:12px;color:var(--text);width:100%">
+            ${['unid','kg','g','litro','ml','mazo'].map(u => `<option value="${u}" ${p.unidad===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Precio Gs</div>
+          <input type="number" value="${p.precio}" onchange="importDetectados[${i}].precio=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;color:var(--green);font-weight:800;width:100%">
+        </div>
+      </div>
+      <button onclick="importDetectados.splice(${i},1);renderImportItems()"
+        style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--red);border-radius:8px;padding:3px;font-size:11px;cursor:pointer">
+        🗑 Eliminar fila
+      </button>
+    </div>`).join('');
+}
+
+function guardarImport() {
+  if (importDetectados.length === 0) { toast('Sin productos para guardar', true); return; }
+  const superNombre = document.getElementById('import-super').value || 'Archivo';
+  let guardados = 0;
+  importDetectados.forEach(p => {
+    if (!p.nombre || p.nombre.length < 2) return;
+    const exist = DB.stock.find(s => s.nombre.toLowerCase() === p.nombre.toLowerCase());
+    if (exist) {
+      exist.cantidad += p.cantidad;
+      if (p.precio > 0) exist.precio = p.precio;
+    } else {
+      DB.stock.push({ nombre: p.nombre, cantidad: p.cantidad, unidad: p.unidad || 'unid', precio: p.precio || 0, usado: 0 });
+    }
+    if (p.precio > 0) {
+      DB.precios.push({ super: superNombre, producto: p.nombre.toLowerCase(), precio: p.precio });
+    }
+    guardados++;
+  });
+  saveDB();
+  toast(`✅ ${guardados} productos guardados en Stock`);
+  cancelarImport();
+}
+
+function cancelarImport() {
+  document.getElementById('import-resultados').style.display = 'none';
+  document.getElementById('import-icon').textContent = '📂';
+  document.getElementById('import-text').textContent = 'Tocá para seleccionar archivo';
+  importDetectados = [];
+}
+
+function descargarPlantilla() {
+  const csv = 'Producto,Cantidad,Unidad,Precio\nArroz Cañuelas 1kg,2,kg,12500\nAceite Natura 900ml,1,litro,18000\nPollo entero,1,kg,25000\nHuevos (docena),1,unid,15000\n';
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'plantilla_productos.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('📥 Plantilla descargada');
+}
+
+// ============================
+// INIT
+// ============================
+setGreeting();
+renderDashboard();
+</script>
+</body>
+</html>
