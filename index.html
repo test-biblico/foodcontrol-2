@@ -1225,6 +1225,7 @@ function renderStock() {
       <div class="item-info" style="flex:1">
         <div class="item-name">${p.nombre}</div>
         <div class="item-sub">Saldo: <strong>${saldo.toFixed(3)}</strong> ${p.unidad} | Gs ${formatGs(p.precio)}/u</div>
+        ${precioScraperResumen(p.nombre) ? `<div class="item-sub" style="color:var(--green);font-size:11px">💲 ${precioScraperResumen(p.nombre).texto}</div>` : ''}
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%; background:${color}"></div></div>
       </div>
       <div class="item-right" style="margin-left:8px">
@@ -1958,6 +1959,23 @@ function cargarPreciosScraper() {
 
 function normMatch(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Devuelve el resumen de precios del scraper para un producto del stock.
+// Vincula la pestaña Stock con los precios reales de Stock/Supermas.
+function precioScraperResumen(nombre) {
+  if (!DB.precios || !DB.precios.length) return null;
+  const ni = normMatch(nombre);
+  const opciones = DB.precios.filter(p => {
+    const np = normMatch(p.producto);
+    return ni.length > 0 && np.length > 0 && np.includes(ni);
+  });
+  if (!opciones.length) return null;
+  const porSuper = {};
+  opciones.forEach(p => { porSuper[p.super] = porSuper[p.super] ? Math.min(porSuper[p.super], p.precio) : p.precio; });
+  const min = Math.min(...opciones.map(p => p.precio));
+  const partes = Object.entries(porSuper).map(([s, v]) => `${s}: Gs ${formatGs(v)}`);
+  return { min, texto: partes.join(' · ') + `  (mín Gs ${formatGs(min)})` };
 }
 
 function renderPrecios() {
