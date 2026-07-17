@@ -855,8 +855,16 @@ select option { background: var(--bg); }
     <div class="screen" id="screen-precios">
       <div class="section-title">🏪 Precios por Super</div>
 
+      <!-- Carga automática desde el scraper (Stock / Supermas) -->
+      <div class="card" style="border-color:rgba(16,185,129,.4)">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> 🔄 Precios en tiempo real (Stock / Supermas)</div>
+        <div class="section-sub" style="margin-bottom:10px">Cargá los precios reales de los supermercados desde el scraper. Esto alimenta automáticamente la <b>Compra inteligente</b> y el <b>ahorro</b> del Inicio.</div>
+        <button class="btn btn-green" onclick="cargarPreciosScraper()" id="btn-scraper-precios">🔄 Cargar precios de supermercados</button>
+        <div id="estado-scraper" style="font-size:.75rem;color:var(--text3);margin-top:8px"></div>
+      </div>
+
       <div class="card">
-        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Cargar precio</div>
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Cargar precio manual</div>
         <div class="grid-2" style="margin-bottom:8px">
           <div class="input-group">
             <label class="input-label">Supermercado</label>
@@ -873,6 +881,8 @@ select option { background: var(--bg); }
         </div>
         <button class="btn btn-blue" onclick="agregarPrecio()">+ Agregar precio</button>
       </div>
+
+      <input id="sp-buscar" class="input" placeholder="🔍 Buscar en precios cargados..." oninput="renderPrecios()" style="margin:4px 0 12px">
 
       <div id="lista-precios" class="item-list">
         <div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>
@@ -1914,22 +1924,69 @@ function agregarPrecio() {
   toast('✅ Precio guardado');
 }
 
+function cargarPreciosScraper() {
+  const btn = document.getElementById('btn-scraper-precios');
+  const estado = document.getElementById('estado-scraper');
+  const url = 'https://test-biblico.github.io/scraper/data/products.json';
+  btn.disabled = true;
+  estado.textContent = '⏳ Descargando precios de Stock/Supermas...';
+  fetch(url + '?t=' + Date.now())
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      // Mapear al formato de DB.precios: {super, producto (lowercase), precio}
+      const mapeados = data.map(p => ({
+        super: p.site,
+        producto: (p.name || '').toLowerCase(),
+        precio: p.price,
+        _scraper: true
+      }));
+      // Reemplazar precios previos del scraper, conservar los manuales.
+      const manuales = (DB.precios || []).filter(p => !p._scraper);
+      DB.precios = manuales.concat(mapeados);
+      try { saveDB(); } catch (e) { /* localStorage lleno: queda en memoria */ }
+      btn.disabled = false;
+      estado.textContent = '✅ ' + mapeados.length.toLocaleString('es-PY') + ' precios cargados de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados. ¡Usalos en Compra inteligente!';
+      renderPrecios();
+      toast('✅ Precios de supermercados actualizados');
+    })
+    .catch(err => {
+      btn.disabled = false;
+      estado.textContent = '❌ No se pudo cargar (' + err.message + '). Verificá tu conexión.';
+      toast('Error al cargar precios del scraper', true);
+    });
+}
+
+function normMatch(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function renderPrecios() {
   const container = document.getElementById('lista-precios');
-  if (DB.precios.length === 0) {
+  if (!DB.precios || DB.precios.length === 0) {
     container.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>';
     return;
   }
 
-  // Group by product
+  const q = (document.getElementById('sp-buscar').value || '').trim().toLowerCase();
   const grupos = {};
   DB.precios.forEach(p => {
+    if (q && !p.producto.includes(q)) return;
     if (!grupos[p.producto]) grupos[p.producto] = [];
     grupos[p.producto].push(p);
   });
 
-  container.innerHTML = Object.entries(grupos).map(([prod, precios]) => {
+  const claves = Object.keys(grupos);
+  if (claves.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Sin coincidencias para "' + q + '"</div></div>';
+    return;
+  }
+
+  const limite = 300;
+  const mostradas = claves.slice(0, limite);
+  container.innerHTML = mostradas.map(prod => {
+    const precios = grupos[prod];
     const minPrecio = Math.min(...precios.map(p => p.precio));
+    const esScraper = precios.some(p => p._scraper);
     return `<div class="item">
       <div class="item-icon" style="background:rgba(59,130,246,0.15)">${getEmoji(prod)}</div>
       <div class="item-info">
@@ -1938,9 +1995,10 @@ function renderPrecios() {
       </div>
       <div class="item-right">
         <div class="item-value" style="color:var(--green);font-size:13px">Min: Gs ${formatGs(minPrecio)}</div>
+        ${esScraper ? '<div style="font-size:10px;color:var(--text3)">scraper</div>' : ''}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + (claves.length > limite ? `<div class="empty"><div class="empty-text">Mostrando ${limite} de ${claves.length}. Usá el buscador para filtrar.</div></div>` : '');
 }
 
 // ============================
@@ -1987,9 +2045,11 @@ function optimizarCompra() {
   const porSuper = {};
 
   DB.listaCompra.forEach(item => {
-    const opciones = DB.precios.filter(p => 
-      p.producto.includes(item.producto) || item.producto.includes(p.producto)
-    );
+    const ni = normMatch(item.producto);
+    const opciones = DB.precios.filter(p => {
+      const np = normMatch(p.producto);
+      return ni.length > 0 && np.length > 0 && np.includes(ni);
+    });
 
     if (opciones.length === 0) {
       rows += `<div class="result-row"><span>${capitalize(item.producto)}</span><span style="color:var(--text3)">Sin datos de precio</span></div>`;
@@ -2019,7 +2079,11 @@ function optimizarCompra() {
   todosSupers.forEach(sup => {
     let total = 0;
     DB.listaCompra.forEach(item => {
-      const precio = DB.precios.find(p => p.super === sup && (p.producto.includes(item.producto) || item.producto.includes(p.producto)));
+      const ni = normMatch(item.producto);
+      const precio = DB.precios.find(p => {
+        const np = normMatch(p.producto);
+        return p.super === sup && ni.length > 0 && np.length > 0 && np.includes(ni);
+      });
       if (precio) total += precio.precio * item.cantidad;
     });
     if (total > 0) totalesPorSuper[sup] = total;
