@@ -1941,9 +1941,11 @@ function cargarPreciosScraper() {
         precio: p.price,
         _scraper: true
       }));
-      // Reemplazar precios previos del scraper, conservar los manuales.
-      const manuales = (DB.precios || []).filter(p => !p._scraper);
-      DB.precios = manuales.concat(mapeados);
+      // Reemplazar TODOS los precios previos (manuales y scrapers viejos) por
+      // los del scraper. Se respalda lo manual anterior por si se quiere recuperar.
+      const manualesPrevios = (DB.precios || []).filter(p => !p._scraper);
+      if (manualesPrevios.length) DB.preciosManualesBackup = manualesPrevios;
+      DB.precios = mapeados;
       try { saveDB(); } catch (e) { /* localStorage lleno: queda en memoria */ }
       btn.disabled = false;
       estado.textContent = '✅ ' + mapeados.length.toLocaleString('es-PY') + ' precios cargados de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados. ¡Usalos en Compra inteligente!';
