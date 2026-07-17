@@ -1998,13 +1998,17 @@ function buscarPreciosScraper(item) {
     cands = DB.precios.filter(p => normMatch(p.producto).includes(normMatch(item.producto || '')));
   }
   if (medUsuario) {
-    // Quedarse solo con productos de la MISMA medida (misma unidad, magnitud ~igual).
+    // Entre los que tienen medida del MISMO tipo, quedarse con los de magnitud
+    // MAS CERCANA a la pedida (el super a veces no tiene el tamaño exacto).
     const conMedida = cands.filter(p => {
       const pm = parseMedida(p.producto);
-      return pm && pm.tipo === medUsuario.tipo &&
-        Math.abs(pm.valor - medUsuario.valor) <= Math.max(1, medUsuario.valor * 0.05);
+      return pm && pm.tipo === medUsuario.tipo;
     });
-    if (conMedida.length) cands = conMedida;
+    if (conMedida.length) {
+      const conDist = conMedida.map(p => ({ p, d: Math.abs(parseMedida(p.producto).valor - medUsuario.valor) }));
+      const minDist = Math.min(...conDist.map(x => x.d));
+      cands = conDist.filter(x => x.d <= minDist).map(x => x.p);
+    }
   }
   return cands;
 }
