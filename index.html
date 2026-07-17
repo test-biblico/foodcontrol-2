@@ -1965,24 +1965,30 @@ function normMatch(s) {
 }
 
 // Busca los precios del scraper que coincidan con un item de la lista de compra.
-// Mejora el matching: requiere TODAS las palabras del query (AND) y, si el usuario
-// indicó una medida en la unidad (ej. "litro", "kg"), prioriza productos con esa medida.
-// Evita que "leche" traiga "dulce de leche" o "leche 1lt" traiga un alfajor.
+// Requiere TODAS las palabras del producto (AND) y, si el usuario indicó una medida
+// (cantidad + unidad), compara la magnitud real (litro->ml, kg->g) para descartar
+// tamaños distintos. Evita "leche entera 1 litro" -> sachet de 500ml, o "leche" -> dulce de leche.
 const UNIDADES_Q = ['litro','lt','l','kg','kilo','g','gr','ml','cc','unid','un','doc','docena','mza','mazo'];
-const MAP_UNIDAD = {
-  litro:/lt|litro/, lt:/lt|litro/, l:/lt|litro/,
-  kg:/kg|kilo/, kilo:/kg|kilo/,
-  g:/g|gr|gramo/, gr:/g|gr|gramo/, gramo:/g|gr/,
-  ml:/ml/, cc:/cc/,
-  unid:null, un:null, doc:null, docena:null, mza:null, mazo:null
-};
+
+// Extrae la medida de un texto: devuelve {valor, tipo:'vol'|'peso'} en ml / g.
+function parseMedida(str) {
+  if (!str) return null;
+  const m = normMatch(String(str)).match(/(\d+)\s?(lt|l|litro|ml|cc|kg|kilo|g|gr)/);
+  if (!m) return null;
+  const v = parseInt(m[1], 10), u = m[2];
+  if (u === 'lt' || u === 'l' || u === 'litro') return { valor: v * 1000, tipo: 'vol' };
+  if (u === 'ml' || u === 'cc') return { valor: v, tipo: 'vol' };
+  if (u === 'kg' || u === 'kilo') return { valor: v * 1000, tipo: 'peso' };
+  if (u === 'g' || u === 'gr') return { valor: v, tipo: 'peso' };
+  return null;
+}
+
 function buscarPreciosScraper(item) {
   if (!DB.precios || !DB.precios.length) return [];
   const q = normMatch((item.producto || '') + ' ' + (item.unidad || ''));
   const tokens = q.split(' ').filter(t => t && !UNIDADES_Q.includes(t));
-  // Patrón de medida derivado de la UNIDAD del item (litro/kg/g/...).
-  const u = normMatch(item.unidad || '');
-  const medidaPat = (u in MAP_UNIDAD) ? MAP_UNIDAD[u] : null;
+  // Medida pedida por el usuario (cantidad + unidad de medida).
+  const medUsuario = parseMedida((item.cantidad || '') + ' ' + (item.unidad || ''));
   let cands = DB.precios.filter(p => {
     const np = normMatch(p.producto);
     return tokens.every(t => np.includes(t));
@@ -1991,8 +1997,13 @@ function buscarPreciosScraper(item) {
     // Fallback: substring suelto del producto (queries vagas).
     cands = DB.precios.filter(p => normMatch(p.producto).includes(normMatch(item.producto || '')));
   }
-  if (medidaPat) {
-    const conMedida = cands.filter(p => medidaPat.test(normMatch(p.producto)));
+  if (medUsuario) {
+    // Quedarse solo con productos de la MISMA medida (misma unidad, magnitud ~igual).
+    const conMedida = cands.filter(p => {
+      const pm = parseMedida(p.producto);
+      return pm && pm.tipo === medUsuario.tipo &&
+        Math.abs(pm.valor - medUsuario.valor) <= Math.max(1, medUsuario.valor * 0.05);
+    });
     if (conMedida.length) cands = conMedida;
   }
   return cands;
