@@ -1934,10 +1934,11 @@ function cargarPreciosScraper() {
   fetch(url + '?t=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
-      // Mapear al formato de DB.precios: {super, producto (lowercase), precio}
+      // Mapear al formato de DB.precios: {super, producto (lowercase), nombre (original), precio}
       const mapeados = data.map(p => ({
         super: p.site,
         producto: (p.name || '').toLowerCase(),
+        nombre: p.name || '',
         precio: p.price,
         _scraper: true
       }));
@@ -1963,15 +1964,45 @@ function normMatch(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Busca los precios del scraper que coincidan con un item de la lista de compra.
+// Mejora el matching: requiere TODAS las palabras del query (AND) y, si el usuario
+// indicó una medida en la unidad (ej. "litro", "kg"), prioriza productos con esa medida.
+// Evita que "leche" traiga "dulce de leche" o "leche 1lt" traiga un alfajor.
+const UNIDADES_Q = ['litro','lt','l','kg','kilo','g','gr','ml','cc','unid','un','doc','docena','mza','mazo'];
+const MAP_UNIDAD = {
+  litro:/lt|litro/, lt:/lt|litro/, l:/lt|litro/,
+  kg:/kg|kilo/, kilo:/kg|kilo/,
+  g:/g|gr|gramo/, gr:/g|gr|gramo/, gramo:/g|gr/,
+  ml:/ml/, cc:/cc/,
+  unid:null, un:null, doc:null, docena:null, mza:null, mazo:null
+};
+function buscarPreciosScraper(item) {
+  if (!DB.precios || !DB.precios.length) return [];
+  const q = normMatch((item.producto || '') + ' ' + (item.unidad || ''));
+  const tokens = q.split(' ').filter(t => t && !UNIDADES_Q.includes(t));
+  // Patrón de medida derivado de la UNIDAD del item (litro/kg/g/...).
+  const u = normMatch(item.unidad || '');
+  const medidaPat = (u in MAP_UNIDAD) ? MAP_UNIDAD[u] : null;
+  let cands = DB.precios.filter(p => {
+    const np = normMatch(p.producto);
+    return tokens.every(t => np.includes(t));
+  });
+  if (cands.length === 0) {
+    // Fallback: substring suelto del producto (queries vagas).
+    cands = DB.precios.filter(p => normMatch(p.producto).includes(normMatch(item.producto || '')));
+  }
+  if (medidaPat) {
+    const conMedida = cands.filter(p => medidaPat.test(normMatch(p.producto)));
+    if (conMedida.length) cands = conMedida;
+  }
+  return cands;
+}
+
 // Devuelve el resumen de precios del scraper para un producto del stock.
 // Vincula la pestaña Stock con los precios reales de Stock/Supermas.
 function precioScraperResumen(nombre) {
   if (!DB.precios || !DB.precios.length) return null;
-  const ni = normMatch(nombre);
-  const opciones = DB.precios.filter(p => {
-    const np = normMatch(p.producto);
-    return ni.length > 0 && np.length > 0 && np.includes(ni);
-  });
+  const opciones = buscarPreciosScraper({ producto: nombre });
   if (!opciones.length) return null;
   const porSuper = {};
   opciones.forEach(p => { porSuper[p.super] = porSuper[p.super] ? Math.min(porSuper[p.super], p.precio) : p.precio; });
@@ -2065,11 +2096,7 @@ function optimizarCompra() {
   const porSuper = {};
 
   DB.listaCompra.forEach(item => {
-    const ni = normMatch(item.producto);
-    const opciones = DB.precios.filter(p => {
-      const np = normMatch(p.producto);
-      return ni.length > 0 && np.length > 0 && np.includes(ni);
-    });
+    const opciones = buscarPreciosScraper(item);
 
     if (opciones.length === 0) {
       rows += `<div class="result-row"><span>${capitalize(item.producto)}</span><span style="color:var(--text3)">Sin datos de precio</span></div>`;
@@ -2081,7 +2108,7 @@ function optimizarCompra() {
     totalOptimo += costo;
 
     rows += `<div class="result-row">
-      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})</span>
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}</span></span>
       <span>${mejor.super} · Gs ${formatGs(costo)}</span>
     </div>`;
 
@@ -2099,11 +2126,8 @@ function optimizarCompra() {
   todosSupers.forEach(sup => {
     let total = 0;
     DB.listaCompra.forEach(item => {
-      const ni = normMatch(item.producto);
-      const precio = DB.precios.find(p => {
-        const np = normMatch(p.producto);
-        return p.super === sup && ni.length > 0 && np.length > 0 && np.includes(ni);
-      });
+      const opciones = buscarPreciosScraper(item);
+      const precio = opciones.find(p => p.super === sup);
       if (precio) total += precio.precio * item.cantidad;
     });
     if (total > 0) totalesPorSuper[sup] = total;
