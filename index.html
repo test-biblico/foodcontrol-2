@@ -2036,6 +2036,35 @@ function cargarPreciosScraper() {
 
   function scFmt(n){ if(n==null) return "-"; return scCurrency + " " + n.toLocaleString("es-PY",{maximumFractionDigits:0}); }
 
+  // Deriva la categoria del producto desde su nombre, usando familias estandar
+  // de supermercado PY (igual agrupacion que Supermas/Stock). Si el scraper
+  // ya trae category, se respeta (futuro-proof).
+  var SC_CAT = [
+    {c:'Mascotas',   k:['perro','gato','whiskas','dogui','primogato','primocao','alimento p/gato','alimento p/perro','comida gato','comida perro','arena','mascota']},
+    {c:'Bebes',      k:['panal','leche infantil','mamadera','chupete','toallita humeda','toallita humeda','bebe']},
+    {c:'Limpieza',   k:['lavandina','detergente','limpiador','desinfectante','aromatizante','suavizante','jabon de lavar','esponja','pastilla inodoro','pastilla p/inodoro','pino','pino leche','pisol','limpia vidrio','limpiavidrios']},
+    {c:'Higiene',    k:['shampoo','acondicionador','jabon de tocador','jabon corporal','desodorante','pasta dental','crema dental','cepillo','papel higienico','panuelo','crema corporal','locion','talco','perfume','jabon liquido','gel','tonico','microcelar','micelar','humeactante','humectante']},
+    {c:'Carnes y Pescados', k:['carne','pollo','pechuga','bife','chorizo','salchicha','jamon','mortadela','lomito','pescado','atun','sardina','anchoa','caballa','pescado','vacuno','cerdo','huevo']},
+    {c:'Lacteos',    k:['leche','yogur','yogurt','queso','manteca','crema de leche','dulce de leche','leche condensada','leche en polvo','leche polvo','leche chocolatada','leche descremada','leche semidesc','leche entera','leche ult','leche uht','leche sachet','leche crecimiento','leche lactosa','leche cabra','leche de coco','leche almendra','butter','requeson','ricota','mascarpone']},
+    {c:'Verduras y Frutas', k:['papa','tomate','cebolla','mandioca','zanahoria','lechuga','manzana','banana','platano','naranja','limon','fruta','verdura','espinaca','berro','repollo','poroto','arveja','ajo','cebolla','pepino','berenjena','zapallo','locote','batch']},
+    {c:'Panaderia',  k:['pan','galleta','chipa','bizcocho','torta','budin','alfajor','barra','bimbo','panqueque','medialuna']},
+    {c:'Bebidas',    k:['gaseosa','soda','agua','cerveza','vino','jugo','nectar','energizante','cocido','cafe','te ','te','mococa','isotonic','bebida']},
+    {c:'Congelados', k:['helado','congelado','pizza','emisora']},
+    {c:'Dulces y Snacks', k:['chocolate','caramelo','chicle','goma de mascar','bombon','galletita','snack','alfajor','oblea','wafer','barrita']},
+    {c:'Despensa',   k:['arroz','fideo','fideos','tallarin','harina','azucar','sal','aceite','vinagre','salsa','conserva','miel','avena','cereal','mayonesa','mostaza','arrocillo','pure','sopa','caldo','condimento','especi','cacao','coco','almendra','nuez','mani','semilla','lenteja','garbanzo','maiz','choclo','poroto']},
+    {c:'Hogar',      k:['vela','insecticida','repelente','bolsa de residuo','bolsa residuo','papel','cerilla','fosforo','pilas','cinta']},
+    {c:'Tecnologia', k:['pila','bateria','cargador','auricular','cable']}
+  ];
+  function scDerivarCategoria(nombre){
+    var n = scNorm(nombre);
+    for (var i=0;i<SC_CAT.length;i++){
+      for (var j=0;j<SC_CAT[i].k.length;j++){
+        if (n.indexOf(SC_CAT[i].k[j]) !== -1) return SC_CAT[i].c;
+      }
+    }
+    return 'Otros';
+  }
+
   function scNorm(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim(); }
 
   // Carga products.json desde el sitio del scraper (Pages); con cache-bust.
@@ -2045,7 +2074,9 @@ function cargarPreciosScraper() {
       var p = await fetch(url);
       if(!p.ok) throw new Error("HTTP "+p.status);
       scProducts = await p.json();
-      if(!scProducts.length) throw new Error("vacío");
+      if (!scProducts.length) throw new Error("vacío");
+      // Derivar categoria si el scraper no la trae (agrupa como los supers)
+      scProducts.forEach(function(x){ if (!x.category) x.category = scDerivarCategoria(x.name || ''); });
     }catch(e){
       scProducts = [];
       scShowToast("Sin datos","No se pudo cargar el comparador de precios.","error");
@@ -2305,6 +2336,39 @@ function renderListaCompra() {
     </div>`).join('');
 }
 
+// Elige el mejor pack del scraper para un item de la lista de compra.
+// CORRIGE el bug de "Manteca 250g = Gs 1.225.000": el precio del scraper es el de
+// UN pack (p.ej. MANTECA ADORITA 250 GR = Gs 4.900), NO precio por gramo. Si el
+// usuario pide una MEDIDA (g/kg/ml/litro), contamos cuántos packs hacen falta para
+// cubrirla y elegimos el pack que MINIMIZA el costo total (mejor $/unidad), igual en
+// el detalle y en el gráfico para mantener consistencia interna.
+// Si el item es por unidades (unid/docena), el costo = precio_pack × cantidad.
+function elegirMejorPack(item, soloSuper) {
+  const opciones = buscarPreciosScraper(item);
+  if (!opciones.length) return null;
+  const cands = soloSuper ? opciones.filter(p => p.super === soloSuper) : opciones;
+  if (!cands.length) return null;
+
+  const medPed = parseMedida((item.cantidad || '') + ' ' + (item.unidad || ''));
+  const esUnid = /^(unid|un|doc|docena)$/i.test((item.unidad || '').trim());
+
+  let mejor = null, mejorCosto = Infinity, mejorPacks = 1;
+  cands.forEach(p => {
+    const medPack = parseMedida(p.nombre || p.producto);
+    let packs;
+    if (medPed && medPack && medPed.tipo === medPack.tipo) {
+      packs = Math.max(1, Math.ceil(medPed.valor / medPack.valor));
+    } else if (esUnid || !medPed) {
+      packs = Math.max(1, Math.round(item.cantidad || 1));
+    } else {
+      packs = 1; // fallback: asumir que 1 pack cubre la medida pedida
+    }
+    const costo = p.precio * packs;
+    if (costo < mejorCosto) { mejorCosto = costo; mejor = p; mejorPacks = packs; }
+  });
+  return { pack: mejor, packs: mejorPacks, costo: mejorCosto };
+}
+
 function optimizarCompra() {
   if (DB.listaCompra.length === 0) { toast('Agregá productos a la lista', true); return; }
 
@@ -2316,19 +2380,21 @@ function optimizarCompra() {
   const porSuper = {};
 
   DB.listaCompra.forEach(item => {
-    const opciones = buscarPreciosScraper(item);
+    const sel = elegirMejorPack(item);
 
-    if (opciones.length === 0) {
+    if (!sel) {
       rows += `<div class="result-row"><span>${capitalize(item.producto)}</span><span style="color:var(--text3)">Sin datos de precio</span></div>`;
       return;
     }
 
-    const mejor = opciones.reduce((a, b) => a.precio < b.precio ? a : b);
-    const costo = mejor.precio * item.cantidad;
+    const mejor = sel.pack;
+    const packs = sel.packs;
+    const costo = sel.costo;
     totalOptimo += costo;
 
+    const packTxt = packs > 1 ? ` ×${packs}` : '';
     rows += `<div class="result-row">
-      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}</span></span>
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${packTxt}</span></span>
       <span>${mejor.super} · Gs ${formatGs(costo)}</span>
     </div>`;
 
@@ -2340,18 +2406,15 @@ function optimizarCompra() {
   detalleDiv.innerHTML = rows;
   resultadoDiv.style.display = 'block';
 
-  // Comparación por super: para cada item, el MEJOR precio EN ESE super (misma lógica de medida que el detalle)
+  // Comparación por super: para cada item, el MEJOR precio EN ESE super cubriendo
+  // la medida pedida (misma lógica que el detalle -> consistencia interna).
   const todosSupers = [...new Set(DB.precios.map(p => p.super))];
   const totalesPorSuper = {};
   todosSupers.forEach(sup => {
     let total = 0;
     DB.listaCompra.forEach(item => {
-      const opciones = buscarPreciosScraper(item);
-      const opcSup = opciones.filter(p => p.super === sup);
-      if (opcSup.length) {
-        const precio = Math.min(...opcSup.map(p => p.precio));
-        total += precio * item.cantidad;
-      }
+      const sel = elegirMejorPack(item, sup);
+      if (sel) total += sel.costo;
     });
     if (total > 0) totalesPorSuper[sup] = total;
   });
