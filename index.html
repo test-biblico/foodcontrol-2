@@ -2337,15 +2337,18 @@ function optimizarCompra() {
   detalleDiv.innerHTML = rows;
   resultadoDiv.style.display = 'block';
 
-  // Comparación por super
+  // Comparación por super: para cada item, el MEJOR precio EN ESE super (misma lógica de medida que el detalle)
   const todosSupers = [...new Set(DB.precios.map(p => p.super))];
   const totalesPorSuper = {};
   todosSupers.forEach(sup => {
     let total = 0;
     DB.listaCompra.forEach(item => {
       const opciones = buscarPreciosScraper(item);
-      const precio = opciones.find(p => p.super === sup);
-      if (precio) total += precio.precio * item.cantidad;
+      const opcSup = opciones.filter(p => p.super === sup);
+      if (opcSup.length) {
+        const precio = Math.min(...opcSup.map(p => p.precio));
+        total += precio * item.cantidad;
+      }
     });
     if (total > 0) totalesPorSuper[sup] = total;
   });
