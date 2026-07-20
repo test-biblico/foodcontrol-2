@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>FoodControl PRO</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -74,56 +76,46 @@ html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--
 .screen { display: none; }
 .screen.active { display: block; }
 
-/* ====== PESTAÑA PRECIOS: lista nativa estilo scraper (nombre + marca + medida + precio) ====== */
+/* ====== PESTAÑA PRECIOS: COPIA EXACTA del comparador scraper (PriceHunt) ====== */
+/* El CSS esta encapsulado en #screen-precios para no afectar al resto de foodcontrol */
 .content { position: relative; }
 #screen-precios { padding: 0; margin: 0; }
 #screen-precios.active { display: block; overflow-y: auto; }
-#precios-toolbar {
-  position: sticky; top: 0; z-index: 10;
-  background: var(--bg);
-  padding: 12px 12px 10px;
-  border-bottom: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 8px;
+#screen-precios {
+  --bg:#080c0a; --bg2:#0e1512; --card:#131d17; --fg:#e2ede6; --muted:#5e8a72;
+  --accent:#10b981; --border:#1a2f24; --danger:#ef4444;
+  font-family:'DM Sans',sans-serif; color:var(--fg); background:var(--bg);
 }
-#precios-toolbar .input { margin: 0; }
-.precios-filtros { display: flex; gap: 6px; }
-.precios-filtros select { flex: 1; padding: 9px 10px; font-size: 12px; }
-.precios-acciones { display: flex; gap: 8px; }
-.precios-acciones .btn { flex: 1; }
-.precios-estado { font-size: 12px; color: var(--text3); text-align: center; padding: 10px; }
-
-/* item estilo scraper dentro de foodcontrol */
-#lista-precios-scraper { padding: 10px 12px 90px; }
-.precio-item {
-  background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
-  padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
-}
-.precio-item .pi-img {
-  width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--bg);
-  flex-shrink: 0;
-}
-.precio-item .pi-img-ph {
-  width: 40px; height: 40px; border-radius: 8px; background: var(--bg2); flex-shrink: 0;
-}
-.precio-item .pi-info { flex: 1; min-width: 0; }
-.precio-item .pi-nombre { font-size: 14px; font-weight: 700; line-height: 1.2; }
-.precio-item .pi-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; align-items: center; }
-.pi-pill {
-  font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px;
-  background: rgba(59,130,246,0.15); color: var(--blue);
-}
-.pi-tag {
-  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
-  background: var(--card); color: var(--text2); border: 1px solid var(--border);
-}
-.pi-medida { font-size: 10px; color: var(--text3); }
-.precio-item .pi-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.precio-item .pi-precio { font-size: 15px; font-weight: 900; font-family: 'Sora', sans-serif; color: var(--green); }
-.precio-item .pi-min {
-  font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 10px;
-  background: rgba(34,197,94,0.2); color: var(--green); text-transform: uppercase;
-}
-.precio-item .pi-link { font-size: 11px; color: var(--text3); text-decoration: none; }
+#screen-precios * { box-sizing:border-box; }
+#screen-precios h1,#screen-precios h2,#screen-precios h3 { font-family:'Space Grotesk',sans-serif; }
+#screen-precios ::-webkit-scrollbar{width:5px}#screen-precios ::-webkit-scrollbar-track{background:var(--bg)}#screen-precios ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+#screen-precios .card{background:var(--card);border:1px solid var(--border);border-radius:12px;transition:all .2s}
+#screen-precios .card:hover{border-color:rgba(16,185,129,.3)}
+#screen-precios .input{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--fg);font-size:.85rem;width:100%;outline:none;transition:border .2s}
+#screen-precios .input:focus{border-color:var(--accent)}
+#screen-precios .input::placeholder{color:var(--muted)}
+#screen-precios .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+#screen-precios .btn-p{background:var(--accent);color:#000}.#screen-precios .btn-p:hover{opacity:.85}
+#screen-precios .btn-g{background:transparent;border:1px solid var(--border);color:var(--muted)}#screen-precios .btn-g:hover{color:var(--fg);border-color:var(--muted)}
+#screen-precios .btn-danger{background:transparent;border:1px solid rgba(239,68,68,.3);color:var(--danger)}#screen-precios .btn-danger:hover{background:rgba(239,68,68,.1)}
+#screen-precios .btn:disabled{opacity:.4;cursor:not-allowed}
+#screen-precios table{width:100%;border-collapse:collapse}
+#screen-precios th{background:var(--bg2);padding:10px 14px;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+#screen-precios td{padding:10px 14px;border-bottom:1px solid rgba(26,47,36,.4);font-size:.85rem}
+#screen-precios tr:hover td{background:rgba(16,185,129,.02)}
+#screen-precios .badge-ok{background:#065f46;color:#6ee7b7;font-size:.65rem;padding:2px 6px;border-radius:10px;font-weight:700}
+#screen-precios .toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);padding:14px 22px;border-radius:12px;z-index:99;display:flex;align-items:center;gap:10px;animation:scSlideIn .3s ease;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+@keyframes scSlideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+#screen-precios .tag{background:var(--bg);padding:2px 8px;border-radius:6px;font-size:.7rem;color:var(--accent);font-weight:600}
+#screen-precios .loading-spinner{border:3px solid var(--border);border-top:3px solid var(--accent);border-radius:50%;width:20px;height:20px;animation:scSpin 1s linear infinite;display:inline-block}
+@keyframes scSpin{to{transform:rotate(360deg)}}
+#screen-precios .site-pill{padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700}
+#screen-precios .site-Supermas{background:#0e3b2e;color:#6ee7b7}
+#screen-precios .site-Stock{background:#1e2a4d;color:#93c5fd}
+#screen-precios .site-pill-empty{background:#2a2a2a;color:#888}
+/* barra fija de acciones de foodcontrol dentro de la pestaña (sincronizar a mi app) */
+#precios-sync-fixed{position:sticky;top:0;z-index:20;background:rgba(8,12,10,.95);border-bottom:1px solid var(--border);padding:8px 12px;backdrop-filter:blur(6px)}
+#precios-sync-fixed .btn{width:100%;justify-content:center}
 
 
 /* ====== CARDS ====== */
@@ -903,22 +895,68 @@ select option { background: var(--bg); }
       </div>
     </div>
 
-    <!-- ===== PRECIOS (lista nativa estilo scraper: nombre + marca + medida + precio) ===== -->
+    <!-- ===== PRECIOS (COPIA EXACTA del comparador scraper / PriceHunt) ===== -->
     <div class="screen" id="screen-precios">
-      <div id="precios-toolbar">
-        <input id="sp-buscar" class="input" placeholder="🔍 Buscar producto..." oninput="renderListaPrecios()">
-        <div class="precios-filtros">
-          <select id="sp-filtro-site" onchange="renderListaPrecios()"><option value="">Todos los supermercados</option></select>
-          <select id="sp-filtro-brand" onchange="renderListaPrecios()"><option value="">Todas las marcas</option></select>
-          <select id="sp-filtro-measure" onchange="renderListaPrecios()"><option value="">Todas las medidas</option></select>
-        </div>
-        <div class="precios-acciones">
-          <button class="btn btn-green btn-sm" onclick="cargarListaScraper()">⟳ Recargar</button>
-          <button class="btn btn-blue btn-sm" onclick="cargarPreciosScraper()">↧ Sincronizar a mi app</button>
-        </div>
+      <div id="precios-sync-fixed">
+        <button class="btn btn-green" onclick="cargarPreciosScraper()"><i class="fas fa-sync"></i> ↧ Sincronizar a mi app (Compra inteligente)</button>
       </div>
-      <div id="lista-precios-scraper" class="item-list"></div>
-      <div id="precios-estado" class="precios-estado"></div>
+      <div style="max-width:1100px;margin:0 auto;padding:16px 12px 90px">
+
+        <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+          <div>
+            <h1 style="font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:10px">
+              <i class="fas fa-tags" style="color:var(--accent)"></i> PriceHunt
+            </h1>
+            <p style="font-size:.8rem;color:var(--muted);margin-top:2px">Compara precios: Supermas vs Stock</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-g" onclick="scLoadData()"><i class="fas fa-rotate"></i> Recargar</button>
+            <button class="btn btn-p" onclick="scExportCSV()"><i class="fas fa-download"></i> Exportar</button>
+          </div>
+        </header>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px" id="sc-stats">
+          <div class="card" style="padding:16px"><div style="font-size:1.5rem;font-weight:700;font-family:'Space Grotesk'" id="sc-stTotal">-</div><div style="font-size:.75rem;color:var(--muted)">Productos</div></div>
+          <div class="card" style="padding:16px"><div style="font-size:1.5rem;font-weight:700;font-family:'Space Grotesk';color:var(--accent)" id="sc-stMin">-</div><div style="font-size:.75rem;color:var(--muted)">Más barato</div></div>
+          <div class="card" style="padding:16px"><div style="font-size:1.5rem;font-weight:700;font-family:'Space Grotesk'" id="sc-stSites">-</div><div style="font-size:.75rem;color:var(--muted)">Supermercados</div></div>
+        </div>
+
+        <div class="card" style="padding:16px;margin-bottom:20px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+            <div style="position:relative;grid-column:span 2">
+              <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.8rem"></i>
+              <input class="input" id="sc-search" placeholder="Buscar producto..." oninput="scRenderTable()" style="padding-left:34px">
+            </div>
+            <select class="input" id="sc-siteFilter" onchange="scRenderTable()">
+              <option value="">Todos los supermercados</option>
+            </select>
+            <select class="input" id="sc-categoryFilter" onchange="scRenderTable()">
+              <option value="">Todas las categorías</option>
+            </select>
+            <select class="input" id="sc-brandFilter" onchange="scRenderTable()">
+              <option value="">Todas las marcas</option>
+            </select>
+            <select class="input" id="sc-measureFilter" onchange="scRenderTable()">
+              <option value="">Todas las medidas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" style="overflow:hidden">
+          <div style="overflow-x:auto;max-height:62vh;overflow-y:auto">
+            <table>
+              <thead><tr><th>Producto</th><th>Supermercado</th><th>Marca</th><th>Medida</th><th>Precio</th></tr></thead>
+              <tbody id="sc-tbody"></tbody>
+            </table>
+          </div>
+          <div id="sc-emptyState" style="padding:50px;text-align:center">
+            <i class="fas fa-inbox" style="font-size:2rem;color:var(--border);margin-bottom:10px;display:block"></i>
+            <p style="color:var(--muted)">Esperando datos. Pulsa Recargar.</p>
+          </div>
+        </div>
+
+      </div>
+      <div id="sc-toastBox"></div>
     </div>
 
     <!-- ===== COMPRA INTELIGENTE ===== -->
@@ -1083,8 +1121,8 @@ function showScreen(id) {
   if (id === 'plan') renderPlan();
   if (id === 'compra') renderListaCompra();
   if (id === 'precios') {
-    if (!DB.preciosScraper || !DB.preciosScraper.length) cargarListaScraper();
-    else { poblarFiltrosPrecios(); renderListaPrecios(); }
+    // Copia del comparador scraper: carga products.json al abrir la pestaña
+    if (typeof scLoadData === 'function') scLoadData();
   }
 }
 
@@ -1962,16 +2000,11 @@ function agregarPrecio() {
 }
 
 function cargarPreciosScraper() {
-  const btn = document.getElementById('btn-scraper-precios');
-  const estado = document.getElementById('precios-estado');
   const url = 'https://test-biblico.github.io/scraper/data/products.json';
-  if (btn) btn.disabled = true;
-  if (estado) estado.textContent = '⏳ Descargando precios de Stock/Supermas...';
+  if (DB.syncMsg !== false) toast('⏳ Sincronizando precios de Stock/Supermas...');
   fetch(url + '?t=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
-      // Datos crudos para la lista nativa estilo scraper (nombre, marca, medida, precio, imagen, url, site)
-      DB.preciosScraper = data;
       // Mapear al formato de DB.precios para Compra inteligente
       const mapeados = data.map(p => ({
         super: p.site,
@@ -1984,97 +2017,149 @@ function cargarPreciosScraper() {
       if (manualesPrevios.length) DB.preciosManualesBackup = manualesPrevios;
       DB.precios = mapeados;
       try { saveDB(); } catch (e) { /* localStorage lleno */ }
-      if (btn) btn.disabled = false;
-      poblarFiltrosPrecios();
-      renderListaPrecios();
-      if (estado) estado.textContent = '✅ ' + data.length.toLocaleString('es-PY') + ' productos de ' + new Set(data.map(p=>p.site)).size + ' supermercados sincronizados. También alimenta Compra inteligente.';
-      toast('✅ Precios de supermercados actualizados');
+      // Refrescar la copia del comparador si la pestaña Precios está abierta
+      if (document.getElementById('screen-precios')?.classList.contains('active') && typeof scLoadData === 'function') scLoadData();
+      toast('✅ Precios de supermercados sincronizados');
     })
     .catch(err => {
-      if (btn) btn.disabled = false;
-      if (estado) estado.textContent = '❌ No se pudo cargar (' + err.message + '). Verificá tu conexión.';
-      toast('Error al cargar precios del scraper', true);
+      toast('Error al cargar precios del scraper: ' + err.message, true);
     });
 }
 
-// Carga la lista nativa estilo scraper (nombre + marca + medida + precio) sin tocar DB.precios
-function cargarListaScraper() {
-  const estado = document.getElementById('precios-estado');
-  const url = 'https://test-biblico.github.io/scraper/data/products.json';
-  if (estado) estado.textContent = '⏳ Descargando precios...';
-  fetch(url + '?t=' + Date.now())
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(data => {
-      DB.preciosScraper = data;
-      try { saveDB(); } catch (e) { /* localStorage lleno */ }
-      poblarFiltrosPrecios();
-      renderListaPrecios();
-      if (estado) estado.textContent = '✅ ' + data.length.toLocaleString('es-PY') + ' productos de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados.';
-    })
-    .catch(err => {
-      if (estado) estado.textContent = '❌ No se pudo cargar (' + err.message + ').';
-    });
-}
+// ====== COPIA EXACTA del comparador scraper (PriceHunt), encapsulada para foodcontrol ======
+// Variables y funciones con prefijo sc_ para no colisionar con foodcontrol.
+// Fuente: test-biblico.github.io/scraper/data/products.json
+(function(){
+  var scProducts = [];
+  var scCurrency = "Gs.";
 
-function poblarFiltrosPrecios() {
-  const data = DB.preciosScraper || [];
-  const fill = (id, vals) => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">' + (id === 'sp-filtro-site' ? 'Todos los supermercados' : id === 'sp-filtro-brand' ? 'Todas las marcas' : 'Todas las medidas') + '</option>';
-    Array.from(new Set(vals.filter(Boolean))).sort().forEach(v => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = v;
-      sel.appendChild(o);
-    });
-    sel.value = cur;
-  };
-  fill('sp-filtro-site', data.map(p => p.site));
-  fill('sp-filtro-brand', data.map(p => p.brand));
-  fill('sp-filtro-measure', data.map(p => p.measure));
-}
+  function scFmt(n){ if(n==null) return "-"; return scCurrency + " " + n.toLocaleString("es-PY",{maximumFractionDigits:0}); }
 
-function renderListaPrecios() {
-  const cont = document.getElementById('lista-precios-scraper');
-  if (!cont) return;
-  const data = DB.preciosScraper || [];
-  const q = (document.getElementById('sp-buscar')?.value || '').trim().toLowerCase();
-  const site = document.getElementById('sp-filtro-site')?.value || '';
-  const brand = document.getElementById('sp-filtro-brand')?.value || '';
-  const measure = document.getElementById('sp-filtro-measure')?.value || '';
-  let filt = data.filter(p =>
-    (!q || (p.name || '').toLowerCase().includes(q)) &&
-    (!site || p.site === site) &&
-    (!brand || p.brand === brand) &&
-    (!measure || p.measure === measure)
-  );
-  filt.sort((a, b) => a.price - b.price);
-  if (!filt.length) {
-    cont.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">' + (data.length ? 'Sin coincidencias' : 'Cargando precios del scraper...') + '</div></div>';
-    return;
+  function scNorm(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim(); }
+
+  // Carga products.json desde el sitio del scraper (Pages); con cache-bust.
+  async function scLoadData(){
+    var url = "https://test-biblico.github.io/scraper/data/products.json?t=" + Date.now();
+    try{
+      var p = await fetch(url);
+      if(!p.ok) throw new Error("HTTP "+p.status);
+      scProducts = await p.json();
+      if(!scProducts.length) throw new Error("vacío");
+    }catch(e){
+      scProducts = [];
+      scShowToast("Sin datos","No se pudo cargar el comparador de precios.","error");
+      scInitFilters(); scRenderTable(); scUpdateStats();
+      return;
+    }
+    scInitFilters();
+    scRenderTable();
+    scUpdateStats();
   }
-  const min = filt[0].price;
-  const limit = Math.min(filt.length, 400);
-  let html = '';
-  for (let i = 0; i < limit; i++) {
-    const d = filt[i];
-    const img = d.image
-      ? '<img class="pi-img" src="' + d.image + '" onerror="this.outerHTML=\'<div class=\\\'pi-img-ph\\\'></div>\'">'
-      : '<div class="pi-img-ph"></div>';
-    const pill = d.site ? '<span class="pi-pill">' + d.site + '</span>' : '';
-    const tag = d.brand ? '<span class="pi-tag">' + d.brand + '</span>' : '';
-    const med = d.measure ? '<span class="pi-medida">' + d.measure + '</span>' : '';
-    const isMin = d.price === min ? '<span class="pi-min">mínimo</span>' : '';
-    const link = d.url ? '<a class="pi-link" href="' + d.url + '" target="_blank" rel="noopener">ver ↗</a>' : '';
-    html += '<div class="precio-item">' + img +
-      '<div class="pi-info"><div class="pi-nombre">' + (d.name || '') + '</div>' +
-      '<div class="pi-meta">' + pill + tag + med + '</div></div>' +
-      '<div class="pi-right"><span class="pi-precio">' + formatGs(d.price) + '</span>' + isMin + link + '</div>' +
-      '</div>';
+
+  function scInitFilters(){
+    var sites={}, brands={}, measures={}, categories={};
+    scProducts.forEach(function(x){
+      if(x.site) sites[x.site]=true;
+      if(x.brand) brands[x.brand]=true;
+      if(x.measure) measures[x.measure]=true;
+      if(x.category) categories[x.category]=true;
+    });
+    var sf=document.getElementById("sc-siteFilter");
+    if(sf){ sf.innerHTML='<option value="">Todos los supermercados</option>';
+      Object.keys(sites).forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; sf.appendChild(o); }); }
+    var cf=document.getElementById("sc-categoryFilter");
+    if(cf){ cf.innerHTML='<option value="">Todas las categorías</option>';
+      Object.keys(categories).sort(function(a,b){return a.localeCompare(b,"es");}).forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=c; cf.appendChild(o); }); }
+    var bf=document.getElementById("sc-brandFilter");
+    if(bf){ bf.innerHTML='<option value="">Todas las marcas</option>';
+      Object.keys(brands).sort().forEach(function(b){ var o=document.createElement("option"); o.value=b; o.textContent=b; bf.appendChild(o); }); }
+    var mf=document.getElementById("sc-measureFilter");
+    if(mf){ mf.innerHTML='<option value="">Todas las medidas</option>';
+      Object.keys(measures).sort().forEach(function(m){ var o=document.createElement("option"); o.value=m; o.textContent=m; mf.appendChild(o); }); }
   }
-  cont.innerHTML = html;
-}
+
+  function scUpdateStats(){
+    var stT=document.getElementById("sc-stTotal"), stM=document.getElementById("sc-stMin"), stS=document.getElementById("sc-stSites");
+    if(!scProducts.length){ if(stT)stT.textContent="-"; if(stM)stM.textContent="-"; if(stS)stS.textContent="-"; return; }
+    var prices=scProducts.map(function(x){return x.price;});
+    if(stT)stT.textContent=scProducts.length;
+    if(stM)stM.textContent=scFmt(Math.min.apply(null,prices));
+    var sites={}; scProducts.forEach(function(x){sites[x.site]=true;});
+    if(stS)stS.textContent=Object.keys(sites).length;
+  }
+
+  function scRenderTable(){
+    var q=(document.getElementById("sc-search")?.value||"").toLowerCase();
+    var site=document.getElementById("sc-siteFilter")?.value||"";
+    var category=document.getElementById("sc-categoryFilter")?.value||"";
+    var brand=document.getElementById("sc-brandFilter")?.value||"";
+    var measure=document.getElementById("sc-measureFilter")?.value||"";
+    var filtered=scProducts.filter(function(p){
+      var nm=(p.name||"").toLowerCase();
+      return (!q || nm.indexOf(q)!==-1)
+          && (!site || p.site===site)
+          && (!category || p.category===category)
+          && (!brand || p.brand===brand)
+          && (!measure || p.measure===measure);
+    });
+    filtered.sort(function(a,b){ return a.price-b.price; });
+    var tbody=document.getElementById("sc-tbody");
+    var empty=document.getElementById("sc-emptyState");
+    if(!tbody) return;
+    if(!filtered.length){ tbody.innerHTML=""; if(empty)empty.style.display=""; return; }
+    if(empty)empty.style.display="none";
+    var minPrice=filtered[0].price;
+    var limit=Math.min(filtered.length,500);
+    var html="";
+    for(var j=0;j<limit;j++){
+      var d=filtered[j];
+      var imgHtml=d.image
+        ? '<img src="'+d.image+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--bg)" onerror="this.style.display=\'none\'">'
+        : '<div style="width:40px;height:40px;border-radius:6px;background:var(--bg2);flex-shrink:0"></div>';
+      var priceStyle=d.price===minPrice?'color:var(--accent)':'';
+      var badgeHtml=d.price===minPrice?'<span class="badge-ok" style="margin-left:6px">MÍNIMO</span>':'';
+      var pill=d.site?'<span class="site-pill site-'+d.site+'">'+d.site+'</span>':'<span class="site-pill site-pill-empty">?</span>';
+      var brandHtml=d.brand?'<span class="tag">'+d.brand+'</span>':'<span style="color:var(--border)">-</span>';
+      var measureHtml=d.measure?d.measure:'<span style="color:var(--border)">-</span>';
+      html+='<tr>';
+      html+='  <td><div style="display:flex;align-items:center;gap:10px">'+imgHtml+'<span style="font-weight:500">'+d.name+'</span></div></td>';
+      html+='  <td>'+pill+'</td>';
+      html+='  <td>'+brandHtml+'</td>';
+      html+='  <td>'+measureHtml+'</td>';
+      html+='  <td><span style="font-family:Space Grotesk;font-weight:700;'+priceStyle+'">'+scFmt(d.price)+'</span>'+badgeHtml+(d.url?' <a href="'+d.url+'" target="_blank" style="color:var(--muted);font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>':'')+'</td>';
+      html+='</tr>';
+    }
+    tbody.innerHTML=html;
+  }
+
+  function scExportCSV(){
+    if(!scProducts.length){ scShowToast("Sin datos","No hay productos para exportar","warn"); return; }
+    var csv="Supermercado,Categoría,Marca,Medida,Nombre,Precio,URL\n";
+    for(var i=0;i<scProducts.length;i++){
+      var d=scProducts[i];
+      csv+='"'+d.site+'"'+',"'+String(d.brand||"").replace(/"/g,'""')+'"'+',"'+String(d.measure||"").replace(/"/g,'""')+'"'+',"'+d.name.replace(/"/g,'""')+'"'+',"'+scFmt(d.price)+'"'+',"'+String(d.url||"").replace(/"/g,'""')+'"\n';
+    }
+    var blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="precios_comparados.csv"; a.click();
+    scShowToast("Exportado","CSV descargado correctamente","ok");
+  }
+
+  function scShowToast(title,msg,type){
+    var c=document.getElementById("sc-toastBox");
+    if(!c) return;
+    var icon=type==="ok"?"fa-check-circle":"fa-exclamation-triangle";
+    var color=type==="ok"?"var(--accent)":"var(--danger)";
+    var el=document.createElement("div"); el.className="toast";
+    el.innerHTML='<i class="fas '+icon+'" style="color:'+color+';font-size:1.1rem"></i><div><div style="font-weight:600;font-size:.85rem">'+title+'</div><div style="font-size:.78rem;color:var(--muted);max-width:300px">'+msg+'</div></div>';
+    c.appendChild(el);
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },5000);
+  }
+
+  // Exponer al scope global para los onclick del HTML
+  window.scLoadData = scLoadData;
+  window.scExportCSV = scExportCSV;
+})();
+
 
 function normMatch(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
