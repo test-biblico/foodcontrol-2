@@ -995,6 +995,7 @@ select option { background: var(--bg); }
         </div>
         <div class="chart-wrap">
           <div class="chart-title">Comparativa por supermercado</div>
+          <div style="font-size:11px;color:var(--text3);margin:-4px 0 8px">¿Cuánto sale hacer TODA la lista comprando solo en cada super? (bars se comparan entre sí)</div>
           <canvas id="chart-compare" height="150"></canvas>
         </div>
       </div>
@@ -2356,13 +2357,15 @@ function optimizarCompra() {
   if (Object.keys(totalesPorSuper).length > 0) {
     if (chartCompare) chartCompare.destroy();
     const ctx = document.getElementById('chart-compare').getContext('2d');
+    const labelsSup = Object.keys(totalesPorSuper);
+    const valoresSup = Object.values(totalesPorSuper);
     chartCompare = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: Object.keys(totalesPorSuper),
+        labels: labelsSup,
         datasets: [{
-          data: Object.values(totalesPorSuper),
-          backgroundColor: Object.keys(totalesPorSuper).map((_, i) => 
+          data: valoresSup,
+          backgroundColor: labelsSup.map((_, i) =>
             ['rgba(34,197,94,0.7)', 'rgba(59,130,246,0.7)', 'rgba(249,115,22,0.7)', 'rgba(168,85,247,0.7)'][i % 4]
           ),
           borderRadius: 8,
@@ -2370,10 +2373,28 @@ function optimizarCompra() {
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => ' Gs ' + c.parsed.y.toLocaleString('es-PY') } },
+          // Etiqueta con el monto encima de cada barra
+          afterDatasetsDraw(chart) {
+            const { ctx: c, scales: { x, y } } = chart;
+            c.save();
+            c.font = '700 12px Nunito, sans-serif';
+            c.fillStyle = '#e2e8f0';
+            c.textAlign = 'center';
+            chart.data.labels.forEach((lab, i) => {
+              const v = chart.data.datasets[0].data[i];
+              const xp = x.getPixelForValue(i);
+              const yp = y.getPixelForValue(v);
+              c.fillText('Gs ' + v.toLocaleString('es-PY'), xp, yp - 6);
+            });
+            c.restore();
+          }
+        },
         scales: {
           x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          y: { ticks: { color: '#94a3b8', callback: v => 'Gs ' + Number(v).toLocaleString('es-PY') }, grid: { color: 'rgba(255,255,255,0.05)' } }
         }
       }
     });
