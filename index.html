@@ -74,6 +74,51 @@ html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--
 .screen { display: none; }
 .screen.active { display: block; }
 
+/* ====== PESTAÑA PRECIOS: copia exacta del comparador scraper (iframe a pantalla completa) ====== */
+.content { position: relative; }
+#screen-precios { padding: 0; margin: 0; }
+#screen-precios.active {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: block;
+  overflow: hidden;
+  background: var(--bg);
+  z-index: 5;
+}
+#precios-sync-bar {
+  position: absolute;
+  top: 8px; left: 8px; right: 8px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+#precios-sync-bar .btn {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+#precios-sync-bar .hint {
+  font-size: 11px;
+  color: var(--text3);
+  background: rgba(15,17,23,0.7);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+#precios-iframe-wrap {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+#precios-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #fff;
+}
+
 /* ====== CARDS ====== */
 .card {
   background: var(--card); border: 1px solid var(--border);
@@ -851,41 +896,19 @@ select option { background: var(--bg); }
       </div>
     </div>
 
-    <!-- ===== PRECIOS ===== -->
+    <!-- ===== PRECIOS (copia exacta del comparador scraper / PriceHunt) ===== -->
     <div class="screen" id="screen-precios">
-      <div class="section-title">🏪 Precios por Super</div>
-
-      <!-- Carga automática desde el scraper (Stock / Supermas) -->
-      <div class="card" style="border-color:rgba(16,185,129,.4)">
-        <div class="card-title"><span class="dot" style="background:var(--green)"></span> 🔄 Precios en tiempo real (Stock / Supermas)</div>
-        <div class="section-sub" style="margin-bottom:10px">Cargá los precios reales de los supermercados desde el scraper. Esto alimenta automáticamente la <b>Compra inteligente</b> y el <b>ahorro</b> del Inicio.</div>
-        <button class="btn btn-green" onclick="cargarPreciosScraper()" id="btn-scraper-precios">🔄 Cargar precios de supermercados</button>
-        <div id="estado-scraper" style="font-size:.75rem;color:var(--text3);margin-top:8px"></div>
+      <div id="precios-sync-bar">
+        <button class="btn btn-green" onclick="cargarPreciosScraper()" id="btn-scraper-precios">↧ Sincronizar a mi app</button>
+        <span class="hint">Copia exacta del comparador · se actualiza solo</span>
       </div>
-
-      <div class="card">
-        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Cargar precio manual</div>
-        <div class="grid-2" style="margin-bottom:8px">
-          <div class="input-group">
-            <label class="input-label">Supermercado</label>
-            <input id="sp-super" placeholder="Ej: Stock, Ñanduti...">
-          </div>
-          <div class="input-group">
-            <label class="input-label">Producto</label>
-            <input id="sp-producto" placeholder="Ej: Arroz...">
-          </div>
-        </div>
-        <div class="input-group">
-          <label class="input-label">Precio (Gs)</label>
-          <input id="sp-precio" type="number" placeholder="0">
-        </div>
-        <button class="btn btn-blue" onclick="agregarPrecio()">+ Agregar precio</button>
-      </div>
-
-      <input id="sp-buscar" class="input" placeholder="🔍 Buscar en precios cargados..." oninput="renderPrecios()" style="margin:4px 0 12px">
-
-      <div id="lista-precios" class="item-list">
-        <div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>
+      <div id="precios-iframe-wrap">
+        <iframe
+          id="precios-iframe"
+          src="https://test-biblico.github.io/scraper/"
+          title="Comparador de precios Supermas vs Stock"
+          loading="lazy"
+          allow="clipboard-write"></iframe>
       </div>
     </div>
 
@@ -1048,7 +1071,6 @@ function showScreen(id) {
   if (id === 'consumo') renderConsumoSelect();
   if (id === 'recetas') { renderRecetas(); if (DB.fitPerfil && DB.fitPerfil.peso) poblarSelectFit(); }
   if (id === 'plan') renderPlan();
-  if (id === 'precios') renderPrecios();
   if (id === 'compra') renderListaCompra();
 }
 
@@ -1930,7 +1952,7 @@ function cargarPreciosScraper() {
   const estado = document.getElementById('estado-scraper');
   const url = 'https://test-biblico.github.io/scraper/data/products.json';
   btn.disabled = true;
-  estado.textContent = '⏳ Descargando precios de Stock/Supermas...';
+  if (estado) estado.textContent = '⏳ Descargando precios de Stock/Supermas...';
   fetch(url + '?t=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
@@ -1949,13 +1971,12 @@ function cargarPreciosScraper() {
       DB.precios = mapeados;
       try { saveDB(); } catch (e) { /* localStorage lleno: queda en memoria */ }
       btn.disabled = false;
-      estado.textContent = '✅ ' + mapeados.length.toLocaleString('es-PY') + ' precios cargados de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados. ¡Usalos en Compra inteligente!';
-      renderPrecios();
+      if (estado) estado.textContent = '✅ ' + mapeados.length.toLocaleString('es-PY') + ' precios cargados de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados. ¡Usalos en Compra inteligente!';
       toast('✅ Precios de supermercados actualizados');
     })
     .catch(err => {
       btn.disabled = false;
-      estado.textContent = '❌ No se pudo cargar (' + err.message + '). Verificá tu conexión.';
+      if (estado) estado.textContent = '❌ No se pudo cargar (' + err.message + '). Verificá tu conexión.';
       toast('Error al cargar precios del scraper', true);
     });
 }
@@ -2028,6 +2049,7 @@ function precioScraperResumen(nombre) {
 
 function renderPrecios() {
   const container = document.getElementById('lista-precios');
+  if (!container) return; // pestaña Precios ahora es iframe del comparador
   if (!DB.precios || DB.precios.length === 0) {
     container.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>';
     return;
