@@ -2156,9 +2156,11 @@ function cargarPreciosScraper() {
     setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },5000);
   }
 
-  // Exponer al scope global para los onclick del HTML
+  // Exponer al scope global para los onclick/onchange del HTML
   window.scLoadData = scLoadData;
   window.scExportCSV = scExportCSV;
+  window.scRenderTable = scRenderTable;
+  window.scInitFilters = scInitFilters;
 })();
 
 
