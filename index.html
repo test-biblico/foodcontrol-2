@@ -1987,7 +1987,7 @@ function cargarPreciosScraper() {
       if (btn) btn.disabled = false;
       poblarFiltrosPrecios();
       renderListaPrecios();
-      if (estado) estado.textContent = '✅ ' + data.length.toLocaleString('es-PY') + ' productos de ' + (new Set(data.map(p=>p.site)).size + ' supermercados sincronizados. También alimenta Compra inteligente.';
+      if (estado) estado.textContent = '✅ ' + data.length.toLocaleString('es-PY') + ' productos de ' + new Set(data.map(p=>p.site)).size + ' supermercados sincronizados. También alimenta Compra inteligente.';
       toast('✅ Precios de supermercados actualizados');
     })
     .catch(err => {
