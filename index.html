@@ -74,50 +74,57 @@ html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--
 .screen { display: none; }
 .screen.active { display: block; }
 
-/* ====== PESTAÑA PRECIOS: copia exacta del comparador scraper (iframe a pantalla completa) ====== */
+/* ====== PESTAÑA PRECIOS: lista nativa estilo scraper (nombre + marca + medida + precio) ====== */
 .content { position: relative; }
 #screen-precios { padding: 0; margin: 0; }
-#screen-precios.active {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  display: block;
-  overflow: hidden;
+#screen-precios.active { display: block; overflow-y: auto; }
+#precios-toolbar {
+  position: sticky; top: 0; z-index: 10;
   background: var(--bg);
-  z-index: 5;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
 }
-#precios-sync-bar {
-  position: absolute;
-  top: 8px; left: 8px; right: 8px;
-  z-index: 10;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+#precios-toolbar .input { margin: 0; }
+.precios-filtros { display: flex; gap: 6px; }
+.precios-filtros select { flex: 1; padding: 9px 10px; font-size: 12px; }
+.precios-acciones { display: flex; gap: 8px; }
+.precios-acciones .btn { flex: 1; }
+.precios-estado { font-size: 12px; color: var(--text3); text-align: center; padding: 10px; }
+
+/* item estilo scraper dentro de foodcontrol */
+#lista-precios-scraper { padding: 10px 12px 90px; }
+.precio-item {
+  background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
 }
-#precios-sync-bar .btn {
-  width: auto;
-  padding: 8px 12px;
-  font-size: 12px;
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+.precio-item .pi-img {
+  width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--bg);
+  flex-shrink: 0;
 }
-#precios-sync-bar .hint {
-  font-size: 11px;
-  color: var(--text3);
-  background: rgba(15,17,23,0.7);
-  padding: 4px 8px;
-  border-radius: 8px;
+.precio-item .pi-img-ph {
+  width: 40px; height: 40px; border-radius: 8px; background: var(--bg2); flex-shrink: 0;
 }
-#precios-iframe-wrap {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+.precio-item .pi-info { flex: 1; min-width: 0; }
+.precio-item .pi-nombre { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.precio-item .pi-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; align-items: center; }
+.pi-pill {
+  font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px;
+  background: rgba(59,130,246,0.15); color: var(--blue);
 }
-#precios-iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-  background: #fff;
+.pi-tag {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  background: var(--card); color: var(--text2); border: 1px solid var(--border);
 }
+.pi-medida { font-size: 10px; color: var(--text3); }
+.precio-item .pi-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.precio-item .pi-precio { font-size: 15px; font-weight: 900; font-family: 'Sora', sans-serif; color: var(--green); }
+.precio-item .pi-min {
+  font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 10px;
+  background: rgba(34,197,94,0.2); color: var(--green); text-transform: uppercase;
+}
+.precio-item .pi-link { font-size: 11px; color: var(--text3); text-decoration: none; }
+
 
 /* ====== CARDS ====== */
 .card {
@@ -896,20 +903,22 @@ select option { background: var(--bg); }
       </div>
     </div>
 
-    <!-- ===== PRECIOS (copia exacta del comparador scraper / PriceHunt) ===== -->
+    <!-- ===== PRECIOS (lista nativa estilo scraper: nombre + marca + medida + precio) ===== -->
     <div class="screen" id="screen-precios">
-      <div id="precios-sync-bar">
-        <button class="btn btn-green" onclick="cargarPreciosScraper()" id="btn-scraper-precios">↧ Sincronizar a mi app</button>
-        <span class="hint">Copia exacta del comparador · se actualiza solo</span>
+      <div id="precios-toolbar">
+        <input id="sp-buscar" class="input" placeholder="🔍 Buscar producto..." oninput="renderListaPrecios()">
+        <div class="precios-filtros">
+          <select id="sp-filtro-site" onchange="renderListaPrecios()"><option value="">Todos los supermercados</option></select>
+          <select id="sp-filtro-brand" onchange="renderListaPrecios()"><option value="">Todas las marcas</option></select>
+          <select id="sp-filtro-measure" onchange="renderListaPrecios()"><option value="">Todas las medidas</option></select>
+        </div>
+        <div class="precios-acciones">
+          <button class="btn btn-green btn-sm" onclick="cargarListaScraper()">⟳ Recargar</button>
+          <button class="btn btn-blue btn-sm" onclick="cargarPreciosScraper()">↧ Sincronizar a mi app</button>
+        </div>
       </div>
-      <div id="precios-iframe-wrap">
-        <iframe
-          id="precios-iframe"
-          src="https://test-biblico.github.io/scraper/"
-          title="Comparador de precios Supermas vs Stock"
-          loading="lazy"
-          allow="clipboard-write"></iframe>
-      </div>
+      <div id="lista-precios-scraper" class="item-list"></div>
+      <div id="precios-estado" class="precios-estado"></div>
     </div>
 
     <!-- ===== COMPRA INTELIGENTE ===== -->
@@ -1042,6 +1051,7 @@ let DB = JSON.parse(localStorage.getItem('foodcontrol_db')) || {
   recetas: [],
   plan: [],
   precios: [],
+  preciosScraper: [],
   listaCompra: [],
   consumo: [],
   fitPerfil: {}
@@ -1072,6 +1082,10 @@ function showScreen(id) {
   if (id === 'recetas') { renderRecetas(); if (DB.fitPerfil && DB.fitPerfil.peso) poblarSelectFit(); }
   if (id === 'plan') renderPlan();
   if (id === 'compra') renderListaCompra();
+  if (id === 'precios') {
+    if (!DB.preciosScraper || !DB.preciosScraper.length) cargarListaScraper();
+    else { poblarFiltrosPrecios(); renderListaPrecios(); }
+  }
 }
 
 function toast(msg, isError = false) {
@@ -1949,14 +1963,16 @@ function agregarPrecio() {
 
 function cargarPreciosScraper() {
   const btn = document.getElementById('btn-scraper-precios');
-  const estado = document.getElementById('estado-scraper');
+  const estado = document.getElementById('precios-estado');
   const url = 'https://test-biblico.github.io/scraper/data/products.json';
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
   if (estado) estado.textContent = '⏳ Descargando precios de Stock/Supermas...';
   fetch(url + '?t=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
-      // Mapear al formato de DB.precios: {super, producto (lowercase), nombre (original), precio}
+      // Datos crudos para la lista nativa estilo scraper (nombre, marca, medida, precio, imagen, url, site)
+      DB.preciosScraper = data;
+      // Mapear al formato de DB.precios para Compra inteligente
       const mapeados = data.map(p => ({
         super: p.site,
         producto: (p.name || '').toLowerCase(),
@@ -1964,21 +1980,100 @@ function cargarPreciosScraper() {
         precio: p.price,
         _scraper: true
       }));
-      // Reemplazar TODOS los precios previos (manuales y scrapers viejos) por
-      // los del scraper. Se respalda lo manual anterior por si se quiere recuperar.
       const manualesPrevios = (DB.precios || []).filter(p => !p._scraper);
       if (manualesPrevios.length) DB.preciosManualesBackup = manualesPrevios;
       DB.precios = mapeados;
-      try { saveDB(); } catch (e) { /* localStorage lleno: queda en memoria */ }
-      btn.disabled = false;
-      if (estado) estado.textContent = '✅ ' + mapeados.length.toLocaleString('es-PY') + ' precios cargados de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados. ¡Usalos en Compra inteligente!';
+      try { saveDB(); } catch (e) { /* localStorage lleno */ }
+      if (btn) btn.disabled = false;
+      poblarFiltrosPrecios();
+      renderListaPrecios();
+      if (estado) estado.textContent = '✅ ' + data.length.toLocaleString('es-PY') + ' productos de ' + (new Set(data.map(p=>p.site)).size + ' supermercados sincronizados. También alimenta Compra inteligente.';
       toast('✅ Precios de supermercados actualizados');
     })
     .catch(err => {
-      btn.disabled = false;
+      if (btn) btn.disabled = false;
       if (estado) estado.textContent = '❌ No se pudo cargar (' + err.message + '). Verificá tu conexión.';
       toast('Error al cargar precios del scraper', true);
     });
+}
+
+// Carga la lista nativa estilo scraper (nombre + marca + medida + precio) sin tocar DB.precios
+function cargarListaScraper() {
+  const estado = document.getElementById('precios-estado');
+  const url = 'https://test-biblico.github.io/scraper/data/products.json';
+  if (estado) estado.textContent = '⏳ Descargando precios...';
+  fetch(url + '?t=' + Date.now())
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      DB.preciosScraper = data;
+      try { saveDB(); } catch (e) { /* localStorage lleno */ }
+      poblarFiltrosPrecios();
+      renderListaPrecios();
+      if (estado) estado.textContent = '✅ ' + data.length.toLocaleString('es-PY') + ' productos de ' + (new Set(data.map(p=>p.site)).size) + ' supermercados.';
+    })
+    .catch(err => {
+      if (estado) estado.textContent = '❌ No se pudo cargar (' + err.message + ').';
+    });
+}
+
+function poblarFiltrosPrecios() {
+  const data = DB.preciosScraper || [];
+  const fill = (id, vals) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">' + (id === 'sp-filtro-site' ? 'Todos los supermercados' : id === 'sp-filtro-brand' ? 'Todas las marcas' : 'Todas las medidas') + '</option>';
+    Array.from(new Set(vals.filter(Boolean))).sort().forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      sel.appendChild(o);
+    });
+    sel.value = cur;
+  };
+  fill('sp-filtro-site', data.map(p => p.site));
+  fill('sp-filtro-brand', data.map(p => p.brand));
+  fill('sp-filtro-measure', data.map(p => p.measure));
+}
+
+function renderListaPrecios() {
+  const cont = document.getElementById('lista-precios-scraper');
+  if (!cont) return;
+  const data = DB.preciosScraper || [];
+  const q = (document.getElementById('sp-buscar')?.value || '').trim().toLowerCase();
+  const site = document.getElementById('sp-filtro-site')?.value || '';
+  const brand = document.getElementById('sp-filtro-brand')?.value || '';
+  const measure = document.getElementById('sp-filtro-measure')?.value || '';
+  let filt = data.filter(p =>
+    (!q || (p.name || '').toLowerCase().includes(q)) &&
+    (!site || p.site === site) &&
+    (!brand || p.brand === brand) &&
+    (!measure || p.measure === measure)
+  );
+  filt.sort((a, b) => a.price - b.price);
+  if (!filt.length) {
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">' + (data.length ? 'Sin coincidencias' : 'Cargando precios del scraper...') + '</div></div>';
+    return;
+  }
+  const min = filt[0].price;
+  const limit = Math.min(filt.length, 400);
+  let html = '';
+  for (let i = 0; i < limit; i++) {
+    const d = filt[i];
+    const img = d.image
+      ? '<img class="pi-img" src="' + d.image + '" onerror="this.outerHTML=\'<div class=\\\'pi-img-ph\\\'></div>\'">'
+      : '<div class="pi-img-ph"></div>';
+    const pill = d.site ? '<span class="pi-pill">' + d.site + '</span>' : '';
+    const tag = d.brand ? '<span class="pi-tag">' + d.brand + '</span>' : '';
+    const med = d.measure ? '<span class="pi-medida">' + d.measure + '</span>' : '';
+    const isMin = d.price === min ? '<span class="pi-min">mínimo</span>' : '';
+    const link = d.url ? '<a class="pi-link" href="' + d.url + '" target="_blank" rel="noopener">ver ↗</a>' : '';
+    html += '<div class="precio-item">' + img +
+      '<div class="pi-info"><div class="pi-nombre">' + (d.name || '') + '</div>' +
+      '<div class="pi-meta">' + pill + tag + med + '</div></div>' +
+      '<div class="pi-right"><span class="pi-precio">' + formatGs(d.price) + '</span>' + isMin + link + '</div>' +
+      '</div>';
+  }
+  cont.innerHTML = html;
 }
 
 function normMatch(s) {
