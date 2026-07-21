@@ -2410,8 +2410,10 @@ function optimizarCompra() {
     totalOptimo += costo;
 
     const packTxt = packs > 1 ? ` ×${packs}` : '';
+    const brandTxt = (mejor.marca || mejor.brand || '') ? ` · ${mejor.marca || mejor.brand}` : '';
+    const medidaTxt = (mejor.medida || mejor.measure || '') ? ` · ${mejor.medida || mejor.measure}` : '';
     rows += `<div class="result-row">
-      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${packTxt}</span></span>
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${brandTxt}${medidaTxt}${packTxt}</span></span>
       <span>${mejor.super} · Gs ${formatGs(costo)}</span>
     </div>`;
 
@@ -2478,6 +2480,7 @@ function optimizarCompra() {
                 ${measure ? '<span>📏 ' + measure + '</span>' : ''}
               </div>
               <div style="font-size:.85rem;font-weight:700;color:var(--green);margin-top:2px">Gs ${formatGs(sel.costo)}</div>
+              ${brand || measure ? `<div style="font-size:.7rem;color:var(--text3);margin-top:2px">${[brand, measure].filter(Boolean).join(' · ')}</div>` : ''}
             </div>`;
           }
         });
