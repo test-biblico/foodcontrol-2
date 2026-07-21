@@ -2383,7 +2383,7 @@ function elegirMejorPack(item, soloSuper) {
     const costo = p.precio * packs;
     if (costo < mejorCosto) { mejorCosto = costo; mejor = p; mejorPacks = packs; }
   });
-  return { pack: mejor, packs: mejorPacks, costo: mejorCosto };
+  return { pack: mejor, packs: mejorPacks, costo: mejorCosto, marca: mejor.brand || mejor.marca, medida: mejor.measure || mejor.medida };
 }
 
 function optimizarCompra() {
