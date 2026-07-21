@@ -2027,6 +2027,8 @@ function cargarPreciosScraper(silent) {
         producto: (p.name || '').toLowerCase(),
         nombre: p.name || '',
         precio: p.price,
+        marca: p.brand || '',
+        medida: p.measure || '',
         _scraper: true
       }));
       const manualesPrevios = (DB.precios || []).filter(p => !p._scraper);
