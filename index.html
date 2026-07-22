@@ -2267,6 +2267,14 @@ function buscarPreciosScraper(item) {
       cands = conDist.filter(x => x.d <= minDist).map(x => x.p);
     }
   }
+  // Exclusiones semánticas puntuales para reducir falsos positivos del scraper
+  const qLower = normMatch((item.producto || '') + ' ' + (item.unidad || ''));
+  if (/manteca/.test(qLower) && !/manteca de mani/.test(qLower)) {
+    cands = cands.filter(p => !/secos/.test((p.producto || '').toLowerCase()));
+  }
+  if (/aceite girasol/.test(qLower)) {
+    cands = cands.filter(p => /aceite/.test((p.producto || '').toLowerCase()) && /girasol/.test((p.producto || '').toLowerCase()));
+  }
   return cands;
 }
 
@@ -2426,7 +2434,7 @@ function optimizarCompra() {
     const brandTxt = (mejor.marca || mejor.brand || '') ? ` · ${mejor.marca || mejor.brand}` : '';
     const medidaTxt = (mejor.medida || mejor.measure || '') ? ` · ${mejor.medida || mejor.measure}` : '';
     rows += `<div class="result-row">
-      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${brandTxt}${medidaTxt}${packTxt}</span></span>
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || item.producto}${brandTxt}${medidaTxt}${packTxt}</span></span>
       <span>${mejor.super} · Gs ${formatGs(mejor.precio)} c/u${packs > 1 ? ` ×${packs} = Gs ${formatGs(costo)}` : ''}</span>
     </div>`;
 
