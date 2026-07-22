@@ -2247,38 +2247,41 @@ function buscarPreciosScraper(item) {
   // Medida pedida por el usuario (cantidad + unidad de medida).
   const medUsuario = parseMedida((item.cantidad || '') + ' ' + (item.unidad || ''));
   let cands = DB.precios.filter(p => {
-    const np = normMatch(p.producto);
+    const np = normMatch(p.producto || p.nombre || "");
     return tokens.every(t => np.includes(t));
   });
   if (cands.length === 0) {
     // Fallback: substring suelto del producto (queries vagas).
-    cands = DB.precios.filter(p => normMatch(p.producto).includes(normMatch(item.producto || '')));
+    cands = DB.precios.filter(p => normMatch(p.producto || p.nombre || "").includes(normMatch(item.producto || "")));
   }
   if (medUsuario) {
     // Prefer packs que alcancen o superen la medida pedida; sino, busco la más cercana.
     const conMedida = cands.filter(p => {
-      const pm = parseMedida(p.producto);
+      const pm = parseMedida(p.producto || p.nombre || "");
       return pm && pm.tipo === medUsuario.tipo;
     });
     if (conMedida.length) {
-      const grandes = conMedida.filter(p => parseMedida(p.producto).valor >= medUsuario.valor);
+      const grandes = conMedida.filter(p => parseMedida(p.producto || p.nombre || "").valor >= medUsuario.valor);
       const pool = grandes.length ? grandes : conMedida;
-      const conDist = pool.map(p => ({ p, d: Math.abs(parseMedida(p.producto).valor - medUsuario.valor) }));
+      const conDist = pool.map(p => ({ p, d: Math.abs(parseMedida(p.producto || p.nombre || "").valor - medUsuario.valor) }));
       const minDist = Math.min(...conDist.map(x => x.d));
       cands = conDist.filter(x => x.d <= minDist).map(x => x.p);
     }
   }
 
   // Exclusiones semánticas puntuales para reducir falsos positivos del scraper
-  const qLower = normMatch((item.producto || '') + ' ' + (item.unidad || ''));
+  const qLower = normMatch((item.producto || "") + " " + (item.unidad || ""));
   if (/manteca/.test(qLower) && !/manteca de mani/.test(qLower)) {
     cands = cands.filter(p => {
-      const lower = (p.producto || '').toLowerCase();
+      const lower = (p.producto || p.nombre || "").toLowerCase();
       return !/secos/.test(lower) && !/manteca de mani/.test(lower);
     });
   }
   if (/aceite girasol/.test(qLower)) {
-    cands = cands.filter(p => /aceite/.test((p.producto || '').toLowerCase()) && /girasol/.test((p.producto || '').toLowerCase()));
+    cands = cands.filter(p => {
+      const lower = (p.producto || p.nombre || "").toLowerCase();
+      return /aceite/.test(lower) && /girasol/.test(lower);
+    });
   }
   return cands;
 }
