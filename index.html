@@ -2255,21 +2255,20 @@ function buscarPreciosScraper(item) {
     cands = DB.precios.filter(p => normMatch(p.producto || p.nombre || "").includes(normMatch(item.producto || "")));
   }
   if (medUsuario) {
-    // Prefer packs que alcancen o superen la medida pedida; sino, busco la más cercana.
     const conMedida = cands.filter(p => {
-      const pm = parseMedida(p.producto || p.nombre || "");
+      const pm = parseMedida(p.producto || p.nombre || '');
       return pm && pm.tipo === medUsuario.tipo;
     });
     if (conMedida.length) {
-      const grandes = conMedida.filter(p => parseMedida(p.producto || p.nombre || "").valor >= medUsuario.valor);
-      const pool = grandes.length ? grandes : conMedida;
-      const conDist = pool.map(p => ({ p, d: Math.abs(parseMedida(p.producto || p.nombre || "").valor - medUsuario.valor) }));
+      const maxMed = medUsuario.valor * 2;
+      const razonables = conMedida.filter(p => parseMedida(p.producto || p.nombre || '').valor <= maxMed);
+      const pool = razonables.length ? razonables : conMedida;
+      const conDist = pool.map(p => ({ p, d: Math.abs(parseMedida(p.producto || p.nombre || '').valor - medUsuario.valor) }));
       const minDist = Math.min(...conDist.map(x => x.d));
       cands = conDist.filter(x => x.d <= minDist).map(x => x.p);
     }
   }
-
-  // Exclusiones semánticas puntuales para reducir falsos positivos del scraper
+// Exclusiones semánticas puntuales para reducir falsos positivos del scraper
   const qLower = normMatch((item.producto || "") + " " + (item.unidad || ""));
   if (/manteca/.test(qLower) && !/manteca de mani/.test(qLower)) {
     cands = cands.filter(p => {
