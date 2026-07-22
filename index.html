@@ -2551,8 +2551,7 @@ function formatGs(n) {
 }
 
 function capitalize(s) {
-  const v = s == null ? '' : String(s);
-  return v ? v[0].toUpperCase() + v.slice(1) : '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function getEmoji(nombre) {
