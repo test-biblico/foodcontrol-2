@@ -2495,8 +2495,10 @@ function optimizarCompra() {
       detalleDiv2.innerHTML = html;
     }
 
-    if (chartCompare) chartCompare.destroy();
-    const ctx = document.getElementById('chart-compare').getContext('2d');
+    if (chartCompare && typeof chartCompare.destroy === 'function') chartCompare.destroy();
+    const chartCanvas = document.getElementById('chart-compare');
+    if (!chartCanvas || typeof Chart === 'undefined') return;
+    const ctx = chartCanvas.getContext('2d');
     const labelsSup = Object.keys(totalesPorSuper);
     const valoresSup = Object.values(totalesPorSuper);
     chartCompare = new Chart(ctx, {
