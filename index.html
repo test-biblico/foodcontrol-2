@@ -1284,7 +1284,7 @@ function agregarStock() {
     exist.precio = precio || exist.precio;
     toast(`✅ Stock actualizado: +${cant} ${unidad}`);
   } else {
-    DB.stock.push({ nombre, cantidad: cant, unidad, precio, usado: 0 });
+    DB.stock.push({ nombre, cantidad: cant, unidad: normUnidad(unidad), precio, usado: 0 });
     toast('✅ Producto agregado');
   }
 
@@ -1591,7 +1591,7 @@ function guardarOCR() {
     if (exist) {
       exist.cantidad += p.cantidad;
     } else {
-      DB.stock.push({ nombre: p.nombre, cantidad: p.cantidad, unidad: p.unidad || 'unid', precio: p.precio, usado: 0 });
+      DB.stock.push({ nombre: p.nombre, cantidad: p.cantidad, unidad: normUnidad(p.unidad || 'unid'), precio: p.precio, usado: 0 });
     }
     if (p.precio > 0) {
       DB.precios.push({ super: superNombre, producto: p.nombre.toLowerCase(), precio: p.precio });
@@ -2220,12 +2220,26 @@ function cargarPreciosScraper(silent) {
 function normMatch(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 }
+const UNIDAD_CANON = {
+  g: 'g', gr: 'g',
+  kg: 'kg', kilo: 'kg',
+  lt: 'litro', l: 'litro', litro: 'litro',
+  ml: 'ml', cc: 'ml',
+  unid: 'unid', un: 'unid',
+  doc: 'docena', docena: 'docena',
+  mza: 'mazo', mazo: 'mazo'
+};
+function normUnidad(u) {
+  if (!u) return 'unid';
+  const k = normMatch(u);
+  return UNIDAD_CANON[k] || u.trim();
+}
 
 // Busca los precios del scraper que coincidan con un item de la lista de compra.
 // Requiere TODAS las palabras del producto (AND) y, si el usuario indicó una medida
 // (cantidad + unidad), compara la magnitud real (litro->ml, kg->g) para descartar
 // tamaños distintos. Evita "leche entera 1 litro" -> sachet de 500ml, o "leche" -> dulce de leche.
-const UNIDADES_Q = ['litro','lt','l','kg','kilo','g','gr','ml','cc','unid','un','doc','docena','mza','mazo'];
+const UNIDADES_Q = ['litro','ml','kg','g','unid','docena','mazo'];
 
 // Extrae la medida de un texto: devuelve {valor, tipo:'vol'|'peso'} en ml / g.
 function parseMedida(str) {
