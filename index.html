@@ -2397,12 +2397,15 @@ function optimizarCompra() {
   let totalOptimo = 0;
   let rows = '';
   const porSuper = {};
+  const dbg = window.__foodcontrol_opt_debug === true;
+  if (dbg) console.log('[opt] start', DB.listaCompra.length, DB.precios ? DB.precios.length : 0);
 
   DB.listaCompra.forEach(item => {
     const sel = elegirMejorPack(item);
 
     if (!sel) {
       rows += `<div class="result-row"><span>${capitalize(item.producto)}</span><span style="color:var(--text3)">Sin datos de precio</span></div>`;
+      if (dbg) console.log('[opt] no match', item.producto);
       return;
     }
 
@@ -2421,11 +2424,13 @@ function optimizarCompra() {
 
     if (!porSuper[mejor.super]) porSuper[mejor.super] = 0;
     porSuper[mejor.super] += costo;
+    if (dbg) console.log('[opt] item', item.producto, mejor.super, 'costo', costo, 'sum', porSuper[mejor.super]);
   });
 
   rows += `<div class="result-row"><span>💰 TOTAL ÓPTIMO</span><span>Gs ${formatGs(totalOptimo)}</span></div>`;
   detalleDiv.innerHTML = rows;
   resultadoDiv.style.display = 'block';
+  if (dbg) console.log('[opt] rows rendered', totalOptimo);
 
   // Comparación por super: para cada item, el MEJOR precio EN ESE super cubriendo
   // la medida pedida (misma lógica que el detalle -> consistencia interna).
@@ -2441,6 +2446,7 @@ function optimizarCompra() {
   });
 
   if (Object.keys(totalesPorSuper).length > 0) {
+    if (dbg) console.log('[opt] totals', Object.entries(totalesPorSuper));
     // Calcular ahorro total
     const supersOrdenados = Object.entries(totalesPorSuper).sort((a,b) => a[1] - b[1]);
     const minTotal = supersOrdenados[0][1];
@@ -2493,14 +2499,19 @@ function optimizarCompra() {
       });
       html += '</div>';
       detalleDiv2.innerHTML = html;
+      if (dbg) console.log('[opt] detail html injected');
     }
 
     if (chartCompare && typeof chartCompare.destroy === 'function') chartCompare.destroy();
     const chartCanvas = document.getElementById('chart-compare');
-    if (!chartCanvas || typeof Chart === 'undefined') return;
+    if (!chartCanvas || typeof Chart === 'undefined') {
+      if (dbg) console.log('[opt] chart skipped', {canvas: !!chartCanvas, chart: typeof Chart});
+      return;
+    }
     const ctx = chartCanvas.getContext('2d');
     const labelsSup = Object.keys(totalesPorSuper);
     const valoresSup = Object.values(totalesPorSuper);
+    if (dbg) console.log('[opt] chart init', labelsSup.length, valoresSup);
     chartCompare = new Chart(ctx, {
       type: 'bar',
       data: {
