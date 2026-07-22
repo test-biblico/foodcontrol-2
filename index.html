@@ -2491,7 +2491,7 @@ function optimizarCompra() {
             const brand = pack.brand || '';
             productosHtml += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
               <div style="font-size:.8rem;color:var(--fg)">${capitalize(item.producto)}</div>
-              <div style="font-size:.75rem;color:var(--text3)">${capitalize(mejor.nombre || mejor.producto)}${brand || measure ? ' · ' + [brand, measure].filter(Boolean).join(' · ') : ''}</div>
+              <div style="font-size:.75rem;color:var(--text3)">${capitalize(pack.nombre || pack.producto)}</div>
               <div style="font-size:.85rem;font-weight:700;color:var(--green);margin-top:2px">Gs ${formatGs(sel.costo)}</div>
             </div>`;
           }
