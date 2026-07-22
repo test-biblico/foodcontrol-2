@@ -2240,6 +2240,23 @@ function parseMedida(str) {
   return null;
 }
 
+// Distancia de edicion minima para tolerar errores de escritura simples.
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  const prev = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    let curr = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr = Math.min(curr + 1, prev[j] + 1, prev[j - 1] + cost);
+      prev[j - 1] = curr;
+    }
+    prev[n] = curr;
+  }
+  return prev[n];
+}
+
 function buscarPreciosScraper(item) {
   if (!DB.precios || !DB.precios.length) return [];
   const q = normMatch((item.producto || '') + ' ' + (item.unidad || ''));
@@ -2247,12 +2264,20 @@ function buscarPreciosScraper(item) {
   // Medida pedida por el usuario (cantidad + unidad de medida).
   const medUsuario = parseMedida((item.cantidad || '') + ' ' + (item.unidad || ''));
   let cands = DB.precios.filter(p => {
-    const np = normMatch(p.producto || p.nombre || "");
+    const np = normMatch(p.producto || p.nombre || '');
     return tokens.every(t => np.includes(t));
   });
   if (cands.length === 0) {
     // Fallback: substring suelto del producto (queries vagas).
-    cands = DB.precios.filter(p => normMatch(p.producto || p.nombre || "").includes(normMatch(item.producto || "")));
+    cands = DB.precios.filter(p => normMatch(p.producto || p.nombre || '').includes(normMatch(item.producto || '')));
+  }
+  if (cands.length === 0 && tokens.length <= 2) {
+    // Fallback fuzzy: tolera 1 error de escritura por token largo (>=4 chars).
+    const fuzzy = DB.precios.filter(p => {
+      const np = normMatch(p.producto || p.nombre || '');
+      return tokens.every(t => t.length >= 4 ? np.split(' ').some(w => levenshtein(t, w) <= 1) : np.includes(t));
+    });
+    if (fuzzy.length) cands = fuzzy;
   }
   if (medUsuario) {
     const conMedida = cands.filter(p => {
