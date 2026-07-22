@@ -2018,11 +2018,12 @@ function agregarPrecio() {
 function cargarPreciosScraper(silent) {
   const url = 'https://test-biblico.github.io/scraper/data/products.json';
   if (DB.syncMsg !== false && !silent) toast('⏳ Sincronizando precios de Stock/Supermas...');
-  fetch(url + '?t=' + Date.now())
+  return fetch(url + '?t=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
+      console.log('[scraper] fetch ok', Array.isArray(data) ? data.length : typeof data, 'records');
       // Mapear al formato de DB.precios para Compra inteligente
-      const mapeados = data.map(p => ({
+      const mapeados = (Array.isArray(data) ? data : []).map(p => ({
         super: p.site,
         producto: (p.name || '').toLowerCase(),
         nombre: p.name || '',
@@ -2031,15 +2032,17 @@ function cargarPreciosScraper(silent) {
         medida: p.measure || '',
         _scraper: true
       }));
+      console.log('[scraper] mapped', mapeados.length);
       const manualesPrevios = (DB.precios || []).filter(p => !p._scraper);
       if (manualesPrevios.length) DB.preciosManualesBackup = manualesPrevios;
       DB.precios = mapeados;
-      try { saveDB(); } catch (e) { /* localStorage lleno */ }
+      try { saveDB(); } catch (e) { console.warn('[scraper] saveDB failed', e); }
       // Refrescar la copia del comparador si la pestaña Precios está abierta
       if (document.getElementById('screen-precios')?.classList.contains('active') && typeof scLoadData === 'function') scLoadData();
       toast('✅ Precios de supermercados sincronizados');
     })
     .catch(err => {
+      console.error('[scraper] load failed', err);
       toast('Error al cargar precios del scraper: ' + err.message, true);
     });
 }
@@ -2390,6 +2393,11 @@ function elegirMejorPack(item, soloSuper) {
 
 function optimizarCompra() {
   if (DB.listaCompra.length === 0) { toast('Agregá productos a la lista', true); return; }
+  if (!DB.precios || DB.precios.length === 0) {
+    toast('⏳ Cargando precios... volvé a intentar en unos segundos');
+    cargarPreciosScraper(false).then(() => optimizarCompra());
+    return;
+  }
 
   const resultadoDiv = document.getElementById('resultado-compra');
   const detalleDiv = document.getElementById('resultado-detalle');
