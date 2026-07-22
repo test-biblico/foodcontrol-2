@@ -2427,7 +2427,7 @@ function optimizarCompra() {
     const medidaTxt = (mejor.medida || mejor.measure || '') ? ` · ${mejor.medida || mejor.measure}` : '';
     rows += `<div class="result-row">
       <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${brandTxt}${medidaTxt}${packTxt}</span></span>
-      <span>${mejor.super} · Gs ${formatGs(costo)}</span>
+      <span>${mejor.super} · Gs ${formatGs(mejor.precio)} c/u${packs > 1 ? ` ×${packs} = Gs ${formatGs(costo)}` : ''}</span>
     </div>`;
 
     if (!porSuper[mejor.super]) porSuper[mejor.super] = 0;
@@ -2487,12 +2487,13 @@ function optimizarCompra() {
           if (sel) {
             encontrados++;
             const pack = sel.pack;
-            const measure = pack.measure || '';
+            const packsLine = sel.packs > 1 ? `Gs ${formatGs(pack.precio)} c/u ×${sel.packs} = Gs ${formatGs(sel.costo)}` : `Gs ${formatGs(pack.precio)} c/u`;
+            const medida = pack.measure || '';
             const brand = pack.brand || '';
             productosHtml += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
               <div style="font-size:.8rem;color:var(--fg)">${capitalize(item.producto)}</div>
-              <div style="font-size:.75rem;color:var(--text3)">${capitalize(pack.nombre || pack.producto)}</div>
-              <div style="font-size:.85rem;font-weight:700;color:var(--green);margin-top:2px">Gs ${formatGs(sel.costo)}</div>
+              <div style="font-size:.75rem;color:var(--text3)">${capitalize(pack.nombre || pack.producto)}${medida ? ' · ' + medida : ''}${brand ? ' · ' + brand : ''}</div>
+              <div style="font-size:.85rem;font-weight:700;color:var(--green);margin-top:2px">${packsLine}</div>
             </div>`;
           }
         });
