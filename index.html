@@ -2386,19 +2386,17 @@ function elegirMejorPack(item, soloSuper) {
   const cands = soloSuper ? opciones.filter(p => p.super === soloSuper) : opciones;
   if (!cands.length) return null;
 
-  const medPed = parseMedida((item.cantidad || '') + ' ' + (item.unidad || ''));
   const esUnid = /^(unid|un|doc|docena)$/i.test((item.unidad || '').trim());
 
   let mejor = null, mejorCosto = Infinity, mejorPacks = 1;
   cands.forEach(p => {
     const medPack = parseMedida(p.nombre || p.producto);
-    let packs;
-    if (medPed && medPack && medPed.tipo === medPack.tipo) {
-      packs = Math.max(1, Math.ceil(medPed.valor / medPack.valor));
-    } else if (esUnid || !medPed) {
+    if (esUnid || !medPack) {
+      // Cantidad por unidades: multiplicar por cantidad pedida.
       packs = Math.max(1, Math.round(item.cantidad || 1));
     } else {
-      packs = 1; // fallback: asumir que 1 pack cubre la medida pedida
+      // Cantidad por medida: 1 pack es la unidad del comercio; se muestra el precio unitario.
+      packs = 1;
     }
     const costo = p.precio * packs;
     if (costo < mejorCosto) { mejorCosto = costo; mejor = p; mejorPacks = packs; }
