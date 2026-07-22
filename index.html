@@ -2255,22 +2255,27 @@ function buscarPreciosScraper(item) {
     cands = DB.precios.filter(p => normMatch(p.producto).includes(normMatch(item.producto || '')));
   }
   if (medUsuario) {
-    // Entre los que tienen medida del MISMO tipo, quedarse con los de magnitud
-    // MAS CERCANA a la pedida (el super a veces no tiene el tamaño exacto).
+    // Prefer packs que alcancen o superen la medida pedida; sino, busco la más cercana.
     const conMedida = cands.filter(p => {
       const pm = parseMedida(p.producto);
       return pm && pm.tipo === medUsuario.tipo;
     });
     if (conMedida.length) {
-      const conDist = conMedida.map(p => ({ p, d: Math.abs(parseMedida(p.producto).valor - medUsuario.valor) }));
+      const grandes = conMedida.filter(p => parseMedida(p.producto).valor >= medUsuario.valor);
+      const pool = grandes.length ? grandes : conMedida;
+      const conDist = pool.map(p => ({ p, d: Math.abs(parseMedida(p.producto).valor - medUsuario.valor) }));
       const minDist = Math.min(...conDist.map(x => x.d));
       cands = conDist.filter(x => x.d <= minDist).map(x => x.p);
     }
   }
+
   // Exclusiones semánticas puntuales para reducir falsos positivos del scraper
   const qLower = normMatch((item.producto || '') + ' ' + (item.unidad || ''));
   if (/manteca/.test(qLower) && !/manteca de mani/.test(qLower)) {
-    cands = cands.filter(p => !/secos/.test((p.producto || '').toLowerCase()));
+    cands = cands.filter(p => {
+      const lower = (p.producto || '').toLowerCase();
+      return !/secos/.test(lower) && !/manteca de mani/.test(lower);
+    });
   }
   if (/aceite girasol/.test(qLower)) {
     cands = cands.filter(p => /aceite/.test((p.producto || '').toLowerCase()) && /girasol/.test((p.producto || '').toLowerCase()));
