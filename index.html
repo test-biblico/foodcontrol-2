@@ -316,7 +316,7 @@ select option { background: var(--bg); }
   padding: 16px; margin-bottom: 14px;
 }
 .result-title { font-size: 13px; font-weight: 700; color: var(--green); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-.result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+.result-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
 .result-row:last-child { border-bottom: none; font-weight: 800; font-size: 15px; color: var(--green); }
 
 /* ====== FIT BADGE ====== */
