@@ -897,7 +897,9 @@ select option { background: var(--bg); }
 
     <!-- ===== PRECIOS (COPIA EXACTA del comparador scraper / PriceHunt) ===== -->
     <div class="screen" id="screen-precios">
-      <!--botón de sincronizar eliminado: ahora es automático al abrir Compra -->
+      <div id="precios-sync-fixed">
+        <button class="btn btn-green" onclick="cargarPreciosScraper()"><i class="fas fa-sync"></i> ↧ Sincronizar a mi app (Compra inteligente)</button>
+      </div>
       <div style="max-width:1100px;margin:0 auto;padding:16px 12px 90px">
 
         <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px">
@@ -996,14 +998,6 @@ select option { background: var(--bg); }
           <div style="font-size:11px;color:var(--text3);margin:-4px 0 8px">¿Cuánto sale hacer TODA la lista comprando solo en cada super? (bars se comparan entre sí)</div>
           <canvas id="chart-compare" height="150"></canvas>
         </div>
-        <div id="compra-ahorro" style="display:none;margin-top:16px">
-          <div class="card" style="padding:16px;text-align:center">
-            <div style="font-size:.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">💰 Ahorro total estimado</div>
-            <div id="compra-ahorro-monto" style="font-size:2rem;font-weight:700;color:var(--green);margin-top:4px">Gs 0</div>
-            <div id="compra-ahorro-detalle" style="font-size:.8rem;color:var(--text3);margin-top:4px"></div>
-          </div>
-        </div>
-        <div id="compra-detalle-supers" style="display:none;margin-top:16px"></div>
       </div>
     </div>
 
@@ -1126,16 +1120,7 @@ function showScreen(id) {
   if (id === 'consumo') renderConsumoSelect();
   if (id === 'recetas') { renderRecetas(); if (DB.fitPerfil && DB.fitPerfil.peso) poblarSelectFit(); }
   if (id === 'plan') renderPlan();
-  if (id === 'compra') {
-    // Sincronización automática: cargar precios del scraper al abrir Compra
-    if (!DB.precios || DB.precios.length === 0) {
-      cargarPreciosScraper(true);
-    } else {
-      // Si ya hay precios, igual refrescar para tener datos actualizados
-      cargarPreciosScraper(true);
-    }
-    renderListaCompra();
-  }
+  if (id === 'compra') renderListaCompra();
   if (id === 'precios') {
     // Copia del comparador scraper: carga products.json al abrir la pestaña
     if (typeof scLoadData === 'function') scLoadData();
@@ -2015,9 +2000,9 @@ function agregarPrecio() {
   toast('✅ Precio guardado');
 }
 
-function cargarPreciosScraper(silent) {
+function cargarPreciosScraper() {
   const url = 'https://test-biblico.github.io/scraper/data/products.json';
-  if (DB.syncMsg !== false && !silent) toast('⏳ Sincronizando precios de Stock/Supermas...');
+  if (DB.syncMsg !== false) toast('⏳ Sincronizando precios de Stock/Supermas...');
   fetch(url + '?t=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
@@ -2027,8 +2012,6 @@ function cargarPreciosScraper(silent) {
         producto: (p.name || '').toLowerCase(),
         nombre: p.name || '',
         precio: p.price,
-        marca: p.brand || '',
-        medida: p.measure || '',
         _scraper: true
       }));
       const manualesPrevios = (DB.precios || []).filter(p => !p._scraper);
@@ -2057,22 +2040,20 @@ function cargarPreciosScraper(silent) {
   // de supermercado PY (igual agrupacion que Supermas/Stock). Si el scraper
   // ya trae category, se respeta (futuro-proof).
   var SC_CAT = [
-    {c:'Bebes',      k:['panal','leche infantil','mamadera','chupete','toallita humeda','bebe','gerber','nan','s26','promiel',' lacteo','papilla']},
-    {c:'Mascotas',   k:['perro','gato','whiskas','dogui','primogato','primocao','alimento p/gato','alimento p/perro','comida gato','comida perro','arena gato','mascota','pedigree','proplan','cat chow','dog chow','raza','felina','canina']},
-    {c:'Limpieza',   k:['lavandina','detergente','limpiador','desinfectante','aromatizante','suavizante','jabon de lavar','jabon polvo','esponja','pastilla inodoro','pastilla p/inodoro','pino','pisol','limpia vidrio','limpiavidrios','sapolin','ayudin','cloro','quitamanchas','quita manchas','desgrasante','desengrasante','lavacocina','lavavajilla','lavaplatos','lavandina','amoniaco','fragancia','virulana','trapeador','escoba','saco de residuo','saco residuo','bolsa de residuo','bolsa residuo','betun','betún','silicona','lavacoche','pasta de lustrar','cepillo de pelo','cepillo p/piso','paño','pano de piso','limpiaparabrisas']},
-    {c:'Higiene',    k:['shampoo','acondicionador','jabon de tocador','jabon tocador','jabon corporal','desodorante','pasta dental','crema dental','cepillo dental','papel higienico','panuelo','panuelo facial','crema corporal','locion','talco','perfume','jabon liquido','gel corporal','gel humectante','tonico','microcelar','micelar','humectante','afeitadora','maquina de afeitar','maquina afeitar','crema de afeitar','jabon de barcelona','jabon barcelona','cotonete','hisopo','tampon','toallita sanitaria','protector sanitario','toalla sanitaria','tratamiento capilar','tratamiento p/cabello','shampoo solido','enjuague','mascara capilar','mascara p/cabello','aceite capilar','aceite p/pelo','peine','cepillo p/cabello','secador','plancha de pelo','plancha de cabello','tijera','corto pelo','corta pelo','kit de barba','kit de afeitar']},
-    {c:'Carnes y Pescados', k:['carne','pollo','pechuga','bife','chorizo','salchicha','jamon','mortadela','lomito','pescado','atun','sardina','anchoa','caballa','vacuno','cerdo','huevo','costilla','milanesa','matambre','choripan','salchicha parrillera','salame','panceta','tocino','albondiga','albóndiga','picadillo','patita','molleja','churrasco','carne picada','carbon para parrilla','parrilla','chorizo colorado','bondiola','fiambre','embutido','kebab','milanesa de pollo','nuggets','salchicha de viena','salchicha viena','frankfurter','saveloy']},
-    {c:'Lacteos',    k:['leche','yogur','yogurt','yoghurt','queso','manteca','crema de leche','dulce de leche','leche condensada','leche en polvo','leche polvo','leche chocolatada','leche descremada','leche semidesc','leche entera','leche ult','leche uht','leche sachet','leche crecimiento','leche lactosa','leche cabra','leche de coco','leche almendra','butter','requeson','ricota','mascarpone','flan','postre de leche','crema chantilly','chantilly','dulce de leche','leche saborizada','yogur griego','yogurt griego','postre','mousse','poting','flan de caramelo','queso crema','queso de untar','queso rallado','parmesano','mozzarella','muzzarella','muzza','cuartirolo','fresco','cremoso','sardo','provolone','por saldo','queso azul','roquefort','cuajada','caspic','cottage']},
-    {c:'Verduras y Frutas', k:['papa','tomate','cebolla','mandioca','zanahoria','lechuga','manzana','banana','platano','naranja','limon','fruta','verdura','espinaca','berro','repollo','poroto','arveja','ajo','pepino','berenjena','zapallo','locote','batch','sandia','melon','melon','mandarina','pomelo','uva',' durazno','duranzo','pelon','coco fruta','palta','acelga','radicheta','rucula','brancha','brocoli','coliflor','repollo','choclo','elote','maiz dulce','rabano','remolacha','zapallito','morron','aji','pimiento','choclo','haba','lenteja fresca','arveja fresca','choclo','mandioca','boniato','camote','jengibre','ajo macho','cebolla de verdeo','cebolla verdeo','cebolleta','puerro','apio','hinojo','rabanito','nabo','col china','col lombarda','col rizada','kale','achicoria','endivia','escarola','radiccio','perejil','perejil','tomate cherry','tomate perita','tomate rama','pepinito','habichuela','vainica','chaucha','palmitos','palmito','champinion','champinon','portobello','hongo','fungi','frutilla fresca','frutillas frescas','arandano fresco','frambuesa fresca','morron','locote','pimiento morron','cumbarilla','pacuri','guavira','yvapurutu','guapo','mamon','guayaba','arasa','inga','yatai','alcachofa']},
-    {c:'Panaderia',  k:['pan','galleta','chipa','bizcocho','torta','budin','alfajor','bimbo','panqueque','medialuna','pan frances','pan de molde','pan rallado','pan dulce','pan blanco','pan integral','pan artesanal','cascaron','scons','factura','vigel','masa','masita','torta frita','chipa','coulant','croissant','factura','pan de carne','pan relleno','prepizza','prepizza','molde','pan lactal','lactal','pan lacteo','pan lactal','cañon','cañon de crema','vainilla','magdalena']}
-    ,
-    {c:'Bebidas',    k:['gaseosa','soda','agua','cerveza','vino','jugo','nectar','energizante',
-    'cocido','cafe','terere','mococa','isotonic','bebida','chicha','cordial','fernet','campari','aperitivo','sidra','champagne','whisky','vodka','ron','gin','pisco','licor','aperitivo','amargo','vermut','tequila','sake','soda de cola','coca cola','sprite','fanta','seven up','guarana','pur rustico','pur','yaguare','guarana','naranja juice','jugo de naranja','jugo exprimido','zumo','juguito','cafe tostado','cafe molido','cafe torrado','capuchino','latte','moka','expresso','espresso','cafe excep','cafe premium','yerba mate','yerba','mate cocido','mate','cacao','te verde','te negro','te de manzanilla','te de hierbas','te helado','te frio']},
-    {c:'Congelados', k:['helado','congelado','pizza','emisora','palito helado','sundae','cassata','trufa','torta helada','postre helado','pancho','pancho congelado','hamburguesa congelada','hamburguesa','milanesa congelada','frozen','alfajor helado','helado de agua','helado de crema','bombon helado','bombon escoces','parable','soffio','savoro']},
-    {c:'Dulces y Snacks', k:['chocolate','caramelo','chicle','goma de mascar','bombon','galletita','snack','alfajor','oblea','wafer','barrita','barra de chocolate','barra chocolate','gelatina','marshmallow','malvavisco','mermelada','dulce','dulce de batata','dulce de membrillo','bocadillo','coco dulce','turron','turrón','pan de miel','pan dulce','banana split','chocolate alfajor','trufa','confitura','azucar mascabo','azucar negra','chocolatina','mantecol','praliné','praline','yogurt helado','miel de abeja','miel de maple','sirope','sirope de chocolate','sirope de caramelo','dulce de leche','postrecito','chupetin','chupa chups','paleta','caramelos','reglas','napolitano','cabsha','cowon','milka','bon o bon','guaymallen','block','tita','duke','milka','-orange','ferrero','kinder','toblerone','cereal bar','barrita de cereal']},
-    {c:'Despensa',   k:['arroz','fideo','fideos','tallarin','harina','azucar','aceite','vinagre','salsa','conserva','miel','avena','cereal','mayonesa','mostaza','arrocillo','pure','sopa','caldo','condimento','especi','cacao','almendra','nuez','mani','semilla','garbanzo','maiz','choclo','poroto','pure de tomate','tomate triturado','tomate perita','puré','salsa de tomate','salsa blanca','salsa golf','salsa criolla','chimichurri','aliño','alino','aderezo','sal parrillera','sal gruesa','sal fina','sal marina','sal yodada','pimienta','oregano','orégano','comino','paprika','pimenton','pimentón','canela','nuez moscada','curry','azafran','azafrán','cumin','semola','sémola','polenta','maicena','fecula','fécula','levadura','polvo de hornear','polvo hornear','medio punto','extracto de tomate','pur rustico','arveja seca','lenteja','pure de papa','puré de papa','pure de calabaza','sopa instantanea','sopa de fideos','sopa de ave','sopa de pollo','caldo instantaneo','cubito','cubito de caldo','consomme','consomé','fideos chinos','fideos de arroz','fideos udon','fideos soba','pasta','pasta fresca','pasta seca','raviol','ravioles','ñoquis','noquis','lasaña','lasana','lasaña','canelones','tortellini','macarrones','macaroni','penne','rigatoni','fusilli','farfalle','spaghetti','fetuccini','tagliatelle','linguini','angel hair','pasta al huevo','aceite de oliva','aceite de girasol','aceite de maiz','aceite de canola','aceite mezcla','aceite vegetal','margarina','aciete','conserva de atun','atun en lata','sardina en lata','caballa en lata','arveja en lata','choclo en lata','tomate en lata','durazno en lata','anana en lata','piña en lata','conserva de fruta','almibar','almíbar','jalea','dulce de zapallo','arroz integral','arroz parbolido','parbolido','arroz jasmin','arroz basmati','arroz dulce','arroz arborio','risotto','arroz yamaní','arroz negro','arroz rojo','arroz salvaje','arveja','poroto negro','poroto blanco','poroto colorado','poroto manteca','poroto alubia','garbanzo','lenteja roja','lenteja negra','lenteja verde']},
-    {c:'Hogar',      k:['vela','insecticida','repelente','cerilla','fosforo','pilas','cinta','papel higienico','panuelo facial','servilleta','servilleta de papel','papel cocina','papel cocinar','papel absorvente','aluminio','film','film transparente','autoadherente','bolsa de consorcio','consorcio','bolsa nitra','hermetica','tupper','recipiente','maceta','tierra','abono','fertilizante','lampara','ampolleta','ampolleta led','led','foco','portalampara','cortina','cortador','cuchillo','taza','plato','vaso','jarra','termo','mate','bombilla','yerbera','azucarera','lechera','cobertor','frazada','sabana','almohada','toalla','repasador','trapeador','balde','escoba','saco de carbón','carbon','lena','leña','parrillero','kit parrillero','abrelatas','destapador','sacacorchos','cucharon','espatula','cuchara','tenedor','abrebotellas','saca yemas','rallador','colador','exprimidor','batidor','amoladora','lijadora','taladro','cinta metrica','caja de herramientas','destornillador','llave','tornillo','clavo','pinza','alicate','cutter','sierra','martillo','soga','cuerda','cabo','mosquetón','mosqueton','bandeja','bandeja de carton','carton','sorbete','sorbete','pajita','cd','dvd','usb','libreta','cuaderno','lapiz','lapicera','fibron','fibron','marcador','resaltador','calculadora','agenda','calendario','tarjeta','sobre','album','fotografía','foto','clips','sujeta papeles','grapa','grapadora','perforador','cartuchera','mochila','bolso','billetera','cartera','riñonera','valija','mochila']},
-    {c:'Tecnologia', k:['pila','bateria','cargador','auricular','cable','audifono','auricular bluetooth','parlante','altoparlante','speaker','microfono','camara','_mouse','mouse','teclado','monitor','pantalla','adaptador','convertidor','hub','router','antena','soporte','tripode','selfie','estuche','funda','protector','temperado','vidrio','silicona case','cover','carcasa','usb','sd','micro sd','memoria','pendrive','disco','ssd','hdmi','displayport','vga','ethernet','wifi','bluetooth','infrarrojo','iot','smart']}
+    {c:'Mascotas',   k:['perro','gato','whiskas','dogui','primogato','primocao','alimento p/gato','alimento p/perro','comida gato','comida perro','arena','mascota']},
+    {c:'Bebes',      k:['panal','leche infantil','mamadera','chupete','toallita humeda','toallita humeda','bebe']},
+    {c:'Limpieza',   k:['lavandina','detergente','limpiador','desinfectante','aromatizante','suavizante','jabon de lavar','esponja','pastilla inodoro','pastilla p/inodoro','pino','pino leche','pisol','limpia vidrio','limpiavidrios']},
+    {c:'Higiene',    k:['shampoo','acondicionador','jabon de tocador','jabon corporal','desodorante','pasta dental','crema dental','cepillo','papel higienico','panuelo','crema corporal','locion','talco','perfume','jabon liquido','gel','tonico','microcelar','micelar','humeactante','humectante']},
+    {c:'Carnes y Pescados', k:['carne','pollo','pechuga','bife','chorizo','salchicha','jamon','mortadela','lomito','pescado','atun','sardina','anchoa','caballa','pescado','vacuno','cerdo','huevo']},
+    {c:'Lacteos',    k:['leche','yogur','yogurt','queso','manteca','crema de leche','dulce de leche','leche condensada','leche en polvo','leche polvo','leche chocolatada','leche descremada','leche semidesc','leche entera','leche ult','leche uht','leche sachet','leche crecimiento','leche lactosa','leche cabra','leche de coco','leche almendra','butter','requeson','ricota','mascarpone']},
+    {c:'Verduras y Frutas', k:['papa','tomate','cebolla','mandioca','zanahoria','lechuga','manzana','banana','platano','naranja','limon','fruta','verdura','espinaca','berro','repollo','poroto','arveja','ajo','cebolla','pepino','berenjena','zapallo','locote','batch']},
+    {c:'Panaderia',  k:['pan','galleta','chipa','bizcocho','torta','budin','alfajor','barra','bimbo','panqueque','medialuna']},
+    {c:'Bebidas',    k:['gaseosa','soda','agua','cerveza','vino','jugo','nectar','energizante','cocido','cafe','te ','te','mococa','isotonic','bebida']},
+    {c:'Congelados', k:['helado','congelado','pizza','emisora']},
+    {c:'Dulces y Snacks', k:['chocolate','caramelo','chicle','goma de mascar','bombon','galletita','snack','alfajor','oblea','wafer','barrita']},
+    {c:'Despensa',   k:['arroz','fideo','fideos','tallarin','harina','azucar','sal','aceite','vinagre','salsa','conserva','miel','avena','cereal','mayonesa','mostaza','arrocillo','pure','sopa','caldo','condimento','especi','cacao','coco','almendra','nuez','mani','semilla','lenteja','garbanzo','maiz','choclo','poroto']},
+    {c:'Hogar',      k:['vela','insecticida','repelente','bolsa de residuo','bolsa residuo','papel','cerilla','fosforo','pilas','cinta']},
+    {c:'Tecnologia', k:['pila','bateria','cargador','auricular','cable']}
   ];
   function scDerivarCategoria(nombre){
     var n = scNorm(nombre);
@@ -2385,7 +2366,7 @@ function elegirMejorPack(item, soloSuper) {
     const costo = p.precio * packs;
     if (costo < mejorCosto) { mejorCosto = costo; mejor = p; mejorPacks = packs; }
   });
-  return { pack: mejor, packs: mejorPacks, costo: mejorCosto, marca: mejor.brand || mejor.marca, medida: mejor.measure || mejor.medida };
+  return { pack: mejor, packs: mejorPacks, costo: mejorCosto };
 }
 
 function optimizarCompra() {
@@ -2412,10 +2393,8 @@ function optimizarCompra() {
     totalOptimo += costo;
 
     const packTxt = packs > 1 ? ` ×${packs}` : '';
-    const brandTxt = (mejor.marca || mejor.brand || '') ? ` · ${mejor.marca || mejor.brand}` : '';
-    const medidaTxt = (mejor.medida || mejor.measure || '') ? ` · ${mejor.medida || mejor.measure}` : '';
     rows += `<div class="result-row">
-      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${brandTxt}${medidaTxt}${packTxt}</span></span>
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})<br><span style="font-size:10px;color:var(--text3)">${mejor.nombre || mejor.producto}${packTxt}</span></span>
       <span>${mejor.super} · Gs ${formatGs(costo)}</span>
     </div>`;
 
@@ -2441,60 +2420,6 @@ function optimizarCompra() {
   });
 
   if (Object.keys(totalesPorSuper).length > 0) {
-    // Calcular ahorro total
-    const supersOrdenados = Object.entries(totalesPorSuper).sort((a,b) => a[1] - b[1]);
-    const minTotal = supersOrdenados[0][1];
-    const maxTotal = supersOrdenados[supersOrdenados.length-1][1];
-    const ahorroMonto = maxTotal - minTotal;
-    const ahorroPct = maxTotal > 0 ? Math.round((ahorroMonto / maxTotal) * 100) : 0;
-    const superMasBarato = supersOrdenados[0][0];
-    const superMasCaro = supersOrdenados[supersOrdenados.length-1][0];
-
-    const ahorroDiv = document.getElementById('compra-ahorro');
-    if (ahorroDiv) {
-      ahorroDiv.style.display = 'block';
-      const montoEl = document.getElementById('compra-ahorro-monto');
-      const detalleEl = document.getElementById('compra-ahorro-detalle');
-      if (montoEl) montoEl.textContent = 'Gs ' + formatGs(ahorroMonto);
-      if (detalleEl) detalleEl.textContent = `${ahorroPct}% comprando todo en ${superMasBarato} vs ${superMasCaro}`;
-    }
-
-    // Generar columnas de detalle por supermercado
-    const detalleDiv2 = document.getElementById('compra-detalle-supers');
-    if (detalleDiv2) {
-      detalleDiv2.style.display = 'block';
-      let html = '<div style="display:grid;grid-template-columns:repeat(' + Math.min(supersOrdenados.length, 3) + ',1fr);gap:12px">';
-      supersOrdenados.forEach(([sup, total]) => {
-        // Productos encontrados en este super
-        let productosHtml = '';
-        let encontrados = 0;
-        DB.listaCompra.forEach(item => {
-          const sel = elegirMejorPack(item, sup);
-          if (sel) {
-            encontrados++;
-            const pack = sel.pack;
-            const measure = pack.measure || '';
-            const brand = pack.brand || '';
-            productosHtml += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-              <div style="font-size:.8rem;color:var(--fg)">${capitalize(item.producto)}</div>
-              <div style="font-size:.85rem;font-weight:700;color:var(--green);margin-top:2px">Gs ${formatGs(sel.costo)}</div>
-              ${brand || measure ? `<div style="font-size:.75rem;color:var(--text3);margin-top:2px">${[brand, measure].filter(Boolean).join(' · ')}</div>` : ''}
-            </div>`;
-          }
-        });
-        const esMejor = sup === superMasBarato;
-        html += `<div class="card" style="padding:12px;${esMejor ? 'border-color:rgba(34,197,94,0.5)' : ''}">
-          <div style="font-size:.9rem;font-weight:700;color:${esMejor ? 'var(--green)' : 'var(--fg)'};padding-bottom:8px;border-bottom:2px solid ${esMejor ? 'var(--green)' : 'var(--border)'};margin-bottom:4px">
-            ${esMejor ? '🏆 ' : ''}${sup}
-          </div>
-          <div style="font-size:.7rem;color:var(--text3);margin-bottom:8px">${encontrados} de ${DB.listaCompra.length} productos · Total: Gs ${formatGs(total)}</div>
-          ${productosHtml || '<div style="font-size:.8rem;color:var(--text3);padding:8px 0">Sin productos encontrados</div>'}
-        </div>`;
-      });
-      html += '</div>';
-      detalleDiv2.innerHTML = html;
-    }
-
     if (chartCompare) chartCompare.destroy();
     const ctx = document.getElementById('chart-compare').getContext('2d');
     const labelsSup = Object.keys(totalesPorSuper);
